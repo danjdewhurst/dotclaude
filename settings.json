@@ -1,7 +1,4 @@
 {
-  "env": {
-    "SHELL": "/opt/homebrew/bin/bash"
-  },
   "model": "opus[1m]",
   "effortLevel": "high",
   "tui": "fullscreen",

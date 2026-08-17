@@ -14,11 +14,22 @@ git clone git@github.com:danjdewhurst/dotclaude.git ~/dotclaude
 ~/dotclaude/install.sh
 ```
 
-`install.sh` creates `~/.claude` if needed, backs up any existing file to `<name>.bak`, and creates the symlinks. It also installs ripgrep via Homebrew if `rg` isn't already on PATH. Re-running it is a no-op.
+`install.sh` creates `~/.claude` if needed, backs up any existing file to `<name>.bak`, and symlinks the config. It then:
 
-One thing to check per machine: `settings.json` sets `env.SHELL` to `/opt/homebrew/bin/bash`. On an Intel Mac that path is `/usr/local/bin/bash`, and on Linux `/usr/bin/bash`. If the configured path isn't executable the script tries `brew install bash`, then warns with the path bash actually has on that machine so you can correct the setting.
+- **Installs the CLI tools Claude uses from Bash** — `rg`, `fd`, `jq`, `ast-grep`, `yq` — via Homebrew on macOS or apt on Debian/Ubuntu. `ast-grep` and `yq` have no apt package and are skipped there with a note. On Debian, `fd-find` installs its binary as `fdfind`, so the script shims `~/.local/bin/fd` to point at it.
+- **Points Claude Code at bash.** The bash path is machine-specific, so it is deliberately *not* in the synced `settings.json`. Instead the script finds the newest bash 4+ on the machine and writes a marked block into `~/.zshrc` and `~/.bashrc`:
 
-macOS ships bash 3.2.57 at `/bin/bash`, which is old enough to matter — the Homebrew build is 5.x.
+  ```bash
+  # >>> dotclaude >>>
+  alias claude="SHELL=/opt/homebrew/bin/bash claude"
+  # <<< dotclaude <<<
+  ```
+
+  Re-running rewrites that block in place instead of appending a second one, and writes *through* a symlinked rc file rather than replacing the link.
+
+macOS ships bash 3.2.57 at `/bin/bash`, so Homebrew's 5.x is preferred where present.
+
+Re-running the whole script is a no-op.
 
 ## Day to day
 
