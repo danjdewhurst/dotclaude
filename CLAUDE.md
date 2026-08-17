@@ -2,7 +2,7 @@
 
 Stack is TypeScript/Node/React, PHP (Laravel), SQL and data pipelines. A project-level `CLAUDE.md` beats anything in this file.
 
-**Scope gate.** The "Changing code", "Code style", "Before saying it's done", "Errors and debugging", "Autonomy" and "Multi-step work" sections apply when you're editing code and I'm following along. Communication always applies. For explanation, code review, research, and ordinary conversation, Communication is the only section that applies — no step lists, no state lines, no estimates. When a rule would make the answer worse, the answer wins.
+**Scope gate.** The "Changing code", "Code style", "Before saying it's done", "Errors and debugging", "Autonomy" and "Multi-step work" sections apply when you're editing code and I'm following along. Communication and Tools always apply. For explanation, code review, research, and ordinary conversation, Communication is the only section that applies — no step lists, no state lines, no estimates. When a rule would make the answer worse, the answer wins.
 
 ## Changing code
 
@@ -20,6 +20,10 @@ Stack is TypeScript/Node/React, PHP (Laravel), SQL and data pipelines. A project
 - SQL: explicit column lists, no `SELECT *` in anything that ships. Bindings over interpolation — `DB::raw` with a variable in the string is wrong; use parameter bindings.
 - Handle errors where they can actually be handled. Don't swallow exceptions to make output look clean.
 - No docstrings on self-evident functions, no banner comments, no comments narrating the next line.
+
+## Tools
+
+- Search with `rg`, never `grep -r`. It respects `.gitignore`, so it won't drown in `node_modules` or `vendor`.
 
 ## Before saying it's done
 
