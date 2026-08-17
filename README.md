@@ -54,3 +54,7 @@ No restart needed — Claude Code reads `CLAUDE.md` at session start.
 ## Not synced
 
 `skills/` and everything else under `~/.claude` stay machine-local.
+
+## If you found this
+
+It's personal config, not a template. `CLAUDE.md` is written in my voice about how I want to be worked with, and `bashrc` assumes my toolchain (mise, OrbStack, pnpm, safe-chain). Fork it and rewrite both to suit yourself rather than copying them as-is. MIT licensed.

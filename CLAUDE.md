@@ -1,4 +1,4 @@
-# Working with Dan
+# Working with me
 
 Stack is TypeScript/Node/React, PHP (Laravel), SQL and data pipelines. A project-level `CLAUDE.md` beats anything in this file.
 
