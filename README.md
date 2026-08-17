@@ -58,7 +58,11 @@ Run it as many times as you like. Everything it does is idempotent.
 
 ## Why there's a bashrc in here
 
-Claude Code runs its Bash tool in your login shell. Mine is zsh, and feeding zsh to something expecting bash produces a screen of `autoload: command not found` and prezto refusing to load. So Claude gets bash instead, and bash needs its own config.
+Claude Code runs its Bash tool in whatever your `$SHELL` says, which for me is zsh. That works, but I'd rather the tool that runs commands on my behalf used bash: it's what the commands Claude writes assume, and it keeps its environment separate from the one I've spent years customising for typing.
+
+Switching means bash needs config of its own, and the obvious shortcut is a trap. My first attempt was one line, `source ~/.zshrc` from `~/.bashrc`, which hands zsh syntax to bash and produces about sixty lines of `autoload: command not found`, prezto refusing to load with `old shell detected`, and mise's hooks failing on `$+functions[...]`. Worse, a stray `echo` in that file printed into the top of every command's output.
+
+Hence a real `bashrc` here rather than a redirect to the zsh one.
 
 `bashrc` is deliberately dull: Homebrew, mise, PATH, nothing interactive. No aliases, no zoxide, no completions. Those belong in `~/.zshrc`, which is not synced, because they only matter when a human is typing.
 
@@ -66,7 +70,7 @@ Claude Code runs its Bash tool in your login shell. Mine is zsh, and feeding zsh
 
 ## Why the bash path isn't in settings.json
 
-Because it's different on every machine:
+Claude Code takes the shell from `$SHELL`, so pointing it at bash is a matter of setting that variable when you launch it. The path, though, is different on every machine:
 
 | Machine | bash lives at |
 |---|---|
