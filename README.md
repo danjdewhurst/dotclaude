@@ -1,14 +1,14 @@
 # dotclaude
 
-My global Claude Code config, synced between machines via symlink:
+My global [Claude Code](https://claude.com/claude-code) config, kept in one place so a new machine takes two commands instead of an afternoon of remembering.
 
-- `CLAUDE.md` → `~/.claude/CLAUDE.md` — global instructions
-- `settings.json` → `~/.claude/settings.json` — global settings
-- `bashrc` → `~/.bashrc` — the shell Claude Code runs commands in
+Three files are symlinked out of this repo into `$HOME`. Editing them in place edits the repo, so there is no copy step and nothing to forget to commit.
 
-Each is a symlink into this repo, so editing the file in place edits the repo.
-
-`bashrc` is deliberately minimal: Homebrew, mise, PATH, nothing interactive. Without it a fresh machine gives Claude a bare shell with no `node`, `php` or `rg`, since Homebrew on Apple Silicon needs `brew shellenv` to be on PATH at all. Interactive conveniences (zoxide, eza, completions) stay in `~/.zshrc`, which is not synced.
+| Repo file | Links to | What it is |
+|---|---|---|
+| `CLAUDE.md` | `~/.claude/CLAUDE.md` | How I want Claude to work: scope, code style, how to communicate |
+| `settings.json` | `~/.claude/settings.json` | Model, effort level, notification channel |
+| `bashrc` | `~/.bashrc` | The shell Claude runs commands in |
 
 ## Setup on a new machine
 
@@ -17,44 +17,55 @@ git clone git@github.com:danjdewhurst/dotclaude.git ~/dotclaude
 ~/dotclaude/install.sh
 ```
 
-`install.sh` creates `~/.claude` if needed, backs up any existing file to `<name>.bak`, and symlinks the config. It then:
+That creates `~/.claude` if it's missing, backs up anything already at those paths to `<name>.bak`, and links the three files. Then it installs the CLI tools Claude leans on from Bash (`git`, `rg`, `fd`, `jq`, `ast-grep`, `yq`) using Homebrew or apt, whichever the machine has.
 
-- **Installs the CLI tools Claude uses from Bash** — `git`, `rg`, `fd`, `jq`, `ast-grep`, `yq` — via Homebrew on macOS or apt on Debian/Ubuntu. `ast-grep` and `yq` have no apt package and are skipped there with a note. On Debian, `fd-find` installs its binary as `fdfind`, so the script shims `~/.local/bin/fd` to point at it.
-- **Points Claude Code at bash.** The bash path is machine-specific, so it is deliberately *not* in the synced `settings.json`. Instead the script finds the newest bash 4+ on the machine and writes a marked block into `~/.zshrc` and `~/.bashrc`:
+Run it as many times as you like. Everything it does is idempotent.
 
-  ```bash
-  # >>> dotclaude >>>
-  alias claude="SHELL=/opt/homebrew/bin/bash claude"
-  # <<< dotclaude <<<
-  ```
+Tested on macOS 26 (Apple Silicon) and Ubuntu 24.04.
 
-  The block goes in `~/.zshrc` and `~/.bash_profile` — the shells you launch `claude` from — never in the synced `~/.bashrc`. Re-running rewrites that block in place instead of appending a second one, and writes *through* a symlinked rc file rather than replacing the link.
+## Why there's a bashrc in here
 
-macOS ships bash 3.2.57 at `/bin/bash`, so Homebrew's 5.x is preferred where present.
+Claude Code runs its Bash tool in your login shell. Mine is zsh, and feeding zsh to something expecting bash produces a screen of `autoload: command not found` and prezto refusing to load. So Claude gets bash instead, and bash needs its own config.
 
-Re-running the whole script is a no-op.
+`bashrc` is deliberately dull: Homebrew, mise, PATH, nothing interactive. No aliases, no zoxide, no completions. Those belong in `~/.zshrc`, which is not synced, because they only matter when a human is typing.
+
+It is not optional. Homebrew on Apple Silicon lives at `/opt/homebrew/bin`, which is not on the default PATH, so without `brew shellenv` a fresh machine hands Claude a shell with no `node`, no `php`, no `rg`, and no clue why.
+
+## Why the bash path isn't in settings.json
+
+Because it's different on every machine. Homebrew puts bash at `/opt/homebrew/bin/bash` on Apple Silicon and `/usr/local/bin/bash` on Intel, Linux uses `/usr/bin/bash`, and macOS still ships bash 3.2.57 at `/bin/bash`. One synced file cannot hold all four.
+
+So `install.sh` finds the newest bash 4+ on the machine and writes a marked block into `~/.zshrc` and `~/.bash_profile`:
+
+```bash
+# >>> dotclaude >>>
+alias claude="SHELL=/opt/homebrew/bin/bash claude"
+# <<< dotclaude <<<
+```
+
+Those are the shells you launch `claude` from, never the synced `~/.bashrc`. Re-running rewrites the block in place rather than stacking a second copy, and it writes *through* a symlinked rc file instead of replacing the symlink, which matters if your `~/.zshrc` points into prezto or another dotfiles checkout.
 
 ## Day to day
 
-Push a change:
+Edit `~/.claude/CLAUDE.md` as normal, then:
 
 ```bash
-git -C ~/dotclaude commit -am "tweak"
+git -C ~/dotclaude commit -am "tweak the debug-spiral rule"
 git -C ~/dotclaude push
 ```
 
-Pull on another machine:
-
-```bash
-git -C ~/dotclaude pull
-```
-
-No restart needed — Claude Code reads `CLAUDE.md` at session start.
+On the other machine, `git -C ~/dotclaude pull`. Claude reads `CLAUDE.md` at session start, so the next session picks it up with no restart dance.
 
 ## Not synced
 
-`skills/` and everything else under `~/.claude` stay machine-local.
+`skills/`, `projects/`, and everything else under `~/.claude` stay machine-local. So does `~/.zshrc`.
+
+## Known rough edges
+
+`ast-grep` and `yq` have no apt package, so on Debian and Ubuntu the script tells you and moves on. Debian also ships `fd-find` with its binary named `fdfind`, so the script drops an `fd` symlink in `~/.local/bin` to match what Claude expects.
 
 ## If you found this
 
-It's personal config, not a template. `CLAUDE.md` is written in my voice about how I want to be worked with, and `bashrc` assumes my toolchain (mise, OrbStack, pnpm, safe-chain). Fork it and rewrite both to suit yourself rather than copying them as-is. MIT licensed.
+It's my config, not a template. `CLAUDE.md` is written in first person about how I want to be worked with, and `bashrc` assumes my toolchain. Fork it and rewrite both rather than copying them and wondering why Claude keeps mentioning mise.
+
+MIT licensed. Take whatever's useful.
