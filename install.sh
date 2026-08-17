@@ -2,25 +2,32 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-FILES=(CLAUDE.md settings.json)
+
+# repo file -> where it goes
+LINKS=(
+  "CLAUDE.md:$HOME/.claude/CLAUDE.md"
+  "settings.json:$HOME/.claude/settings.json"
+  "bashrc:$HOME/.bashrc"
+)
 
 mkdir -p "$HOME/.claude"
 
-for f in "${FILES[@]}"; do
-  target="$HOME/.claude/$f"
+for entry in "${LINKS[@]}"; do
+  src="$REPO/${entry%%:*}"
+  target="${entry#*:}"
 
-  if [ -L "$target" ] && [ "$(readlink "$target")" = "$REPO/$f" ]; then
+  if [ -L "$target" ] && [ "$(readlink "$target")" = "$src" ]; then
     echo "Already linked: $target"
     continue
   fi
 
   if [ -e "$target" ]; then
     mv "$target" "$target.bak"
-    echo "Backed up existing $f to $target.bak"
+    echo "Backed up existing $(basename "$target") to $target.bak"
   fi
 
-  ln -sfn "$REPO/$f" "$target"
-  echo "Linked $target -> $REPO/$f"
+  ln -sfn "$src" "$target"
+  echo "Linked $target -> $src"
 done
 
 # Package installs: Homebrew on macOS, apt on Debian/Ubuntu.
@@ -96,6 +103,7 @@ if [ "$PM" = apt ]; then
   $SUDO apt-get update -qq
 fi
 
+install_tool git git git
 install_tool rg ripgrep ripgrep
 install_tool fd fd fd-find fdfind
 install_tool jq jq jq
@@ -134,8 +142,18 @@ if [ -z "${BASH_PATH:-}" ]; then
 else
   echo "Claude shell: $BASH_PATH ($("$BASH_PATH" --version | head -1))"
 
-  for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
+  # The alias belongs in the shell you launch `claude` from, and must not land
+  # in ~/.bashrc — that one is synced, and the path is machine-specific.
+  if [ ! -e "$HOME/.bash_profile" ]; then
+    echo '[ -f ~/.bashrc ] && . ~/.bashrc' > "$HOME/.bash_profile"
+    echo "Created $HOME/.bash_profile"
+  fi
+
+  for rc in "$HOME/.zshrc" "$HOME/.bash_profile"; do
     [ -e "$rc" ] || continue
+    case "$(readlink "$rc" 2>/dev/null || echo "$rc")" in
+      "$REPO"/*) echo "Skipping $rc — it is synced from the repo."; continue ;;
+    esac
     tmp="$rc.dotclaude.tmp"
     awk '/^# >>> dotclaude >>>$/{skip=1} !skip{print} /^# <<< dotclaude <<<$/{skip=0}' "$rc" > "$tmp"
     {
