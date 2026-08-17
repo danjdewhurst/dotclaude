@@ -2,19 +2,23 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TARGET="$HOME/.claude/CLAUDE.md"
+FILES=(CLAUDE.md settings.json)
 
 mkdir -p "$HOME/.claude"
 
-if [ -L "$TARGET" ] && [ "$(readlink "$TARGET")" = "$REPO/CLAUDE.md" ]; then
-  echo "Already linked: $TARGET"
-  exit 0
-fi
+for f in "${FILES[@]}"; do
+  target="$HOME/.claude/$f"
 
-if [ -e "$TARGET" ]; then
-  mv "$TARGET" "$TARGET.bak"
-  echo "Backed up existing CLAUDE.md to $TARGET.bak"
-fi
+  if [ -L "$target" ] && [ "$(readlink "$target")" = "$REPO/$f" ]; then
+    echo "Already linked: $target"
+    continue
+  fi
 
-ln -sfn "$REPO/CLAUDE.md" "$TARGET"
-echo "Linked $TARGET -> $REPO/CLAUDE.md"
+  if [ -e "$target" ]; then
+    mv "$target" "$target.bak"
+    echo "Backed up existing $f to $target.bak"
+  fi
+
+  ln -sfn "$REPO/$f" "$target"
+  echo "Linked $target -> $REPO/$f"
+done

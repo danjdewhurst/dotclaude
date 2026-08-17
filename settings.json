@@ -1,0 +1,13 @@
+{
+  "env": {
+    "SHELL": "/opt/homebrew/bin/bash"
+  },
+  "model": "opus[1m]",
+  "effortLevel": "high",
+  "tui": "fullscreen",
+  "skipDangerousModePermissionPrompt": true,
+  "skipWorkflowUsageWarning": true,
+  "preferredNotifChannel": "ghostty",
+  "remoteControlAtStartup": true,
+  "agentPushNotifEnabled": true
+}

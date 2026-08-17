@@ -1,8 +1,11 @@
 # dotclaude
 
-My global Claude Code instructions (`CLAUDE.md`), synced between machines via symlink.
+My global Claude Code config, synced between machines via symlink:
 
-`~/.claude/CLAUDE.md` is a symlink into this repo, so editing it in place edits the repo.
+- `CLAUDE.md` — global instructions
+- `settings.json` — global settings
+
+`~/.claude/CLAUDE.md` and `~/.claude/settings.json` are symlinks into this repo, so editing them in place edits the repo.
 
 ## Setup on a new machine
 
@@ -11,7 +14,9 @@ git clone git@github.com:danjdewhurst/dotclaude.git ~/dotclaude
 ~/dotclaude/install.sh
 ```
 
-`install.sh` creates `~/.claude` if needed, backs up any existing `CLAUDE.md` to `CLAUDE.md.bak`, and creates the symlink. Re-running it is a no-op.
+`install.sh` creates `~/.claude` if needed, backs up any existing file to `<name>.bak`, and creates the symlinks. Re-running it is a no-op.
+
+One thing to check per machine: `settings.json` sets `env.SHELL` to `/opt/homebrew/bin/bash`. On an Intel Mac that path is `/usr/local/bin/bash`, and on Linux `/usr/bin/bash`.
 
 ## Day to day
 
@@ -32,4 +37,4 @@ No restart needed — Claude Code reads `CLAUDE.md` at session start.
 
 ## Not synced
 
-`~/.claude/settings.json`, `skills/`, and everything else under `~/.claude` stay machine-local.
+`skills/` and everything else under `~/.claude` stay machine-local.
