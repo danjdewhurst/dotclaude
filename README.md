@@ -16,7 +16,9 @@ git clone git@github.com:danjdewhurst/dotclaude.git ~/dotclaude
 
 `install.sh` creates `~/.claude` if needed, backs up any existing file to `<name>.bak`, and creates the symlinks. It also installs ripgrep via Homebrew if `rg` isn't already on PATH. Re-running it is a no-op.
 
-One thing to check per machine: `settings.json` sets `env.SHELL` to `/opt/homebrew/bin/bash`. On an Intel Mac that path is `/usr/local/bin/bash`, and on Linux `/usr/bin/bash`. The script warns if the configured path isn't executable and tells you where bash actually lives — it doesn't install anything.
+One thing to check per machine: `settings.json` sets `env.SHELL` to `/opt/homebrew/bin/bash`. On an Intel Mac that path is `/usr/local/bin/bash`, and on Linux `/usr/bin/bash`. If the configured path isn't executable the script tries `brew install bash`, then warns with the path bash actually has on that machine so you can correct the setting.
+
+macOS ships bash 3.2.57 at `/bin/bash`, which is old enough to matter — the Homebrew build is 5.x.
 
 ## Day to day
 

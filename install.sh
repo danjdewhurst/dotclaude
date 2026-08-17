@@ -34,15 +34,19 @@ fi
 
 configured_shell="$(sed -n 's/.*"SHELL"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$REPO/settings.json")"
 
+if [ -n "$configured_shell" ] && [ ! -x "$configured_shell" ] && command -v brew >/dev/null; then
+  echo "Installing bash..."
+  brew install bash
+fi
+
 if [ -n "$configured_shell" ] && [ ! -x "$configured_shell" ]; then
   echo
   echo "WARNING: settings.json sets SHELL to $configured_shell, which is not executable here."
   echo "Claude Code will fail to start a shell until this is fixed."
   if command -v bash >/dev/null; then
-    echo "This machine has bash at: $(command -v bash)"
-  fi
-  if command -v brew >/dev/null; then
-    echo "For an up-to-date bash: brew install bash"
+    echo "This machine has bash at: $(command -v bash) ($(bash --version | head -1))"
   fi
   echo "Edit the SHELL value in $REPO/settings.json to match."
+else
+  echo "Shell: $configured_shell ($("$configured_shell" --version | head -1))"
 fi
