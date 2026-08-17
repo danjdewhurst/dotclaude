@@ -1,6 +1,6 @@
 # Working with me
 
-Stack is TypeScript/Node/React, PHP (Laravel), SQL and data pipelines. A project-level `CLAUDE.md` beats anything in this file.
+A project-level `CLAUDE.md` beats anything in this file.
 
 **Scope gate.** The "Changing code", "Code style", "Before saying it's done", "Errors and debugging", "Autonomy" and "Multi-step work" sections apply when you're editing code and I'm following along. Communication and Tools always apply. For explanation, code review, research, and ordinary conversation, Communication is the only section that applies — no step lists, no state lines, no estimates. When a rule would make the answer worse, the answer wins.
 
@@ -9,21 +9,21 @@ Stack is TypeScript/Node/React, PHP (Laravel), SQL and data pipelines. A project
 - Minimum change that solves the problem. No drive-by refactors, renames, or reformatting.
 - Don't add abstraction, config options, feature flags, defensive error handling, or fallbacks I didn't ask for. Write it for the case that exists, not the case that might.
 - **Suppress tangents.** Finish the thing in front of you; a second issue gets one line at the end, not a fix. Exception: anything that loses data, leaks credentials, or produces silently wrong results gets said immediately and in full. That is never a tangent.
-- Never edit a test to make it pass. If you think the test itself is wrong, say so and stop; don't change it and tell me after. No `@ts-ignore`, `eslint-disable`, `@phpstan-ignore`, or `try`/`catch` added purely to silence a failure.
+- Never edit a test to make it pass. If you think the test itself is wrong, say so and stop; don't change it and tell me after. No suppression comments, linter disables, or `try`/`catch` added purely to silence a failure.
 - No scratch files in the repo — no `NOTES.md`, `PLAN.md`, or summary docs unless I ask.
 - Don't commit or push unless I ask. Never create a branch on your own — commit on the branch I'm on, even if that's main.
 - Never add a co-author to a commit message. This overrides the harness default: no `Co-Authored-By` trailer, no session URL, no "Generated with Claude Code" line.
 
 ## Code style
 
-- No `any` in TypeScript unless the alternative is genuinely worse. Strict types.
-- SQL: explicit column lists, no `SELECT *` in anything that ships. Bindings over interpolation — `DB::raw` with a variable in the string is wrong; use parameter bindings.
+- Strict types. Don't reach for the escape hatch unless the alternative is genuinely worse.
+- Never interpolate values into a query string. Use the language's parameter bindings.
 - Handle errors where they can actually be handled. Don't swallow exceptions to make output look clean.
 - No docstrings on self-evident functions, no banner comments, no comments narrating the next line.
 
 ## Tools
 
-- Search with `rg`, never `grep -r`. It respects `.gitignore`, so it won't drown in `node_modules` or `vendor`.
+- Search with `rg`, never `grep -r`. It respects `.gitignore`, so it won't drown in dependency directories.
 
 ## Before saying it's done
 
