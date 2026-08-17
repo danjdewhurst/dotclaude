@@ -23,14 +23,22 @@ for f in "${FILES[@]}"; do
   echo "Linked $target -> $REPO/$f"
 done
 
-if command -v rg >/dev/null; then
-  echo "ripgrep already installed: $(command -v rg)"
-elif command -v brew >/dev/null; then
-  echo "Installing ripgrep..."
-  brew install ripgrep
-else
-  echo "ripgrep not installed and Homebrew not found — install it with your package manager."
-fi
+install_tool() {
+  cmd="$1"
+  pkg="$2"
+  if command -v "$cmd" >/dev/null; then
+    echo "$pkg already installed: $(command -v "$cmd")"
+  elif command -v brew >/dev/null; then
+    echo "Installing $pkg..."
+    brew install "$pkg"
+  else
+    echo "$pkg not installed and Homebrew not found — install it with your package manager."
+  fi
+}
+
+install_tool rg ripgrep
+install_tool fd fd
+install_tool jq jq
 
 configured_shell="$(sed -n 's/.*"SHELL"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$REPO/settings.json")"
 
