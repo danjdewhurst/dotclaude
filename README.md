@@ -17,7 +17,7 @@ git clone git@github.com:danjdewhurst/dotclaude.git ~/dotclaude
 ~/dotclaude/install.sh
 ```
 
-That creates `~/.claude` if it's missing, backs up anything already at those paths to `<name>.bak`, and links the three files. Then it installs the CLI tools Claude leans on from Bash (`git`, `rg`, `fd`, `jq`, `ast-grep`, `yq`) using Homebrew or apt, whichever the machine has.
+That creates `~/.claude` if it's missing, backs up anything already at those paths to `<name>.bak`, and links the three files. Then it installs the CLI tools Claude leans on from Bash: `git`, `rg`, `fd` and `jq` through Homebrew or apt, and `mise`, which in turn supplies `ast-grep` and `yq` on any platform.
 
 Run it as many times as you like. Everything it does is idempotent.
 
@@ -62,7 +62,9 @@ On the other machine, `git -C ~/dotclaude pull`. Claude reads `CLAUDE.md` at ses
 
 ## Known rough edges
 
-`ast-grep` and `yq` have no apt package, so on Debian and Ubuntu the script tells you and moves on. Debian also ships `fd-find` with its binary named `fdfind`, so the script drops an `fd` symlink in `~/.local/bin` to match what Claude expects.
+Neither `ast-grep` nor `yq` is packaged for apt, so they come from mise instead, which carries both in its registry and works the same on macOS and Linux. On macOS, where Homebrew already has them, mise stays out of the way. Debian also ships `fd-find` with its binary named `fdfind`, so the script drops an `fd` symlink in `~/.local/bin` to match what Claude expects.
+
+On a machine without Homebrew the script installs mise with `curl https://mise.run | sh`, which is the vendor's documented method but is still piping a remote script into a shell. Swap it for [their apt repo](https://mise.jdx.dev/installing-mise.html) if that bothers you.
 
 ## If you found this
 

@@ -107,8 +107,39 @@ install_tool git git git
 install_tool rg ripgrep ripgrep
 install_tool fd fd fd-find fdfind
 install_tool jq jq jq
-install_tool ast-grep ast-grep -
-install_tool yq yq -
+
+# mise manages the language runtimes, and doubles as the installer for tools
+# with no apt package.
+if ! command -v mise >/dev/null; then
+  if [ "$PM" = brew ]; then
+    echo "Installing mise..."
+    brew install mise
+  else
+    echo "Installing mise from mise.run..."
+    curl -fsSL https://mise.run | sh
+  fi
+fi
+
+MISE="$(command -v mise || echo "$HOME/.local/bin/mise")"
+
+install_via_mise() {
+  cmd="$1"
+  if command -v "$cmd" >/dev/null; then
+    echo "$cmd already installed: $(command -v "$cmd")"
+    return
+  fi
+  if [ ! -x "$MISE" ]; then
+    echo "$cmd not installed and mise is unavailable — install it yourself."
+    return
+  fi
+  echo "Installing $cmd via mise..."
+  if ! "$MISE" use -g -y "$cmd@latest"; then
+    echo "  failed to install $cmd — carrying on."
+  fi
+}
+
+install_via_mise ast-grep
+install_via_mise yq
 
 # The shell Claude Code uses is machine-specific, so it lives in the shell rc
 # files rather than the synced settings.json.

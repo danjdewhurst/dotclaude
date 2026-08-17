@@ -7,6 +7,9 @@ elif [ -x /usr/local/bin/brew ]; then
   eval "$(/usr/local/bin/brew shellenv)"
 fi
 
+# Before mise: that is where the mise.run installer puts it on Linux.
+export PATH="$HOME/.local/bin:$PATH"
+
 if command -v mise >/dev/null; then
   eval "$(mise activate bash)"
 fi
@@ -15,7 +18,6 @@ if [ -f "$HOME/.orbstack/shell/init.bash" ]; then
   . "$HOME/.orbstack/shell/init.bash"
 fi
 
-export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/.composer/vendor/bin:$PATH"
 export PATH="$HOME/.bun/bin:$PATH"
 
