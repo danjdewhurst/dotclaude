@@ -6,7 +6,6 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # repo file -> where it goes
 LINKS=(
   "CLAUDE.md:$HOME/.claude/CLAUDE.md"
-  "settings.json:$HOME/.claude/settings.json"
   "bashrc:$HOME/.bashrc"
 )
 
@@ -15,6 +14,38 @@ if [ -e "$HOME/.claude" ] && [ ! -d "$HOME/.claude" ]; then
   exit 1
 fi
 mkdir -p "$HOME/.claude"
+
+# Migration: settings.json used to be symlinked out of this repo. It is now a
+# real per-machine file, so a machine set up before that change is left with a
+# link to a path git has since deleted. Materialise it -- from the repo file if
+# it is still there, from the last commit that carried it otherwise -- so the
+# machine keeps running the settings it already had.
+migrate_settings() {
+  target="$HOME/.claude/settings.json"
+
+  [ -L "$target" ] || return 0
+  case "$(readlink "$target")" in
+    "$REPO"/settings.json) ;;
+    *) return 0 ;;
+  esac
+
+  if [ -e "$target" ]; then
+    content="$(cat "$target")"
+  else
+    deleted="$(git -C "$REPO" log --diff-filter=D -1 --format=%H -- settings.json 2>/dev/null || true)"
+    if [ -z "$deleted" ] || ! content="$(git -C "$REPO" show "$deleted^:settings.json" 2>/dev/null)"; then
+      rm -f "$target"
+      echo "Removed a dangling settings.json symlink. Claude Code will write a fresh one."
+      return 0
+    fi
+  fi
+
+  rm -f "$target"
+  printf '%s\n' "$content" > "$target"
+  echo "settings.json is no longer synced from the repo -- kept your copy at $target"
+}
+
+migrate_settings
 
 # Move a real file out of the way, never clobbering an older backup. Symlinks
 # are removed rather than backed up: backing one up would overwrite the .bak
@@ -208,7 +239,7 @@ install_portable_tool ast-grep
 install_portable_tool yq
 
 # Claude Code takes its shell from $SHELL. The bash path differs per machine,
-# so it is set at launch from the shell rc rather than the synced settings.json.
+# so it is set at launch from the shell rc rather than a file synced from this repo.
 bash_version_key() {
   "$1" -c 'printf "%s%03d\n" "${BASH_VERSINFO[0]}" "${BASH_VERSINFO[1]}"' 2>/dev/null || true
 }

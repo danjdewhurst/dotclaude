@@ -15,12 +15,11 @@
 
 My global [Claude Code](https://claude.com/claude-code) config, kept in one place so a new machine takes two commands instead of an afternoon of remembering.
 
-Three files are symlinked out of this repo into `$HOME`. Editing them in place edits the repo, so there is no copy step and nothing to forget to commit.
+Two files are symlinked out of this repo into `$HOME`. Editing them in place edits the repo, so there is no copy step and nothing to forget to commit.
 
 ```text
 ~/dotclaude/                            ~/
 ├── CLAUDE.md ─────────────────────────▶ .claude/CLAUDE.md
-├── settings.json ─────────────────────▶ .claude/settings.json
 ├── bashrc ────────────────────────────▶ .bashrc
 ├── install.sh
 ├── README.md
@@ -30,7 +29,6 @@ Three files are symlinked out of this repo into `$HOME`. Editing them in place e
 | Repo file | What it is |
 |---|---|
 | `CLAUDE.md` | How I want Claude to work: scope, code style, how to communicate |
-| `settings.json` | Model, effort level, notification channel |
 | `bashrc` | The shell Claude runs commands in |
 
 ## Setup on a new machine
@@ -40,7 +38,7 @@ git clone git@github.com:danjdewhurst/dotclaude.git ~/dotclaude
 ~/dotclaude/install.sh
 ```
 
-That creates `~/.claude` if it's missing, moves anything already at those paths to `<name>.bak` (timestamped if a `.bak` is already there), and links the three files. Then it installs the tools Claude leans on from Bash:
+That creates `~/.claude` if it's missing, moves anything already at those paths to `<name>.bak` (timestamped if a `.bak` is already there), and links the two files. Then it installs the tools Claude leans on from Bash:
 
 | Tool | What Claude uses it for | macOS | Linux |
 |---|---|---|---|
@@ -72,7 +70,11 @@ The last line sources `~/.bashrc.local` if it exists. That is where anything mac
 
 > **It is not optional.** Homebrew on Apple Silicon lives at `/opt/homebrew/bin`, which is not on the default PATH. Without `brew shellenv` a fresh machine hands Claude a shell with no `node`, no `php`, no `rg`, and no clue why.
 
-## Why the bash path isn't in settings.json
+## Why `settings.json` isn't in here
+
+`~/.claude/settings.json` is a real file on each machine, not a symlink out of this repo. What goes in it is machine-specific — MCP servers denied by UUID, notification channel, effort level — and syncing one copy across machines means every one of them gets another machine's answers. `install.sh` leaves an existing one alone, with one exception. A machine set up before this split still has `~/.claude/settings.json` symlinked into the repo, pointing at a file git has since deleted, so the installer converts that link back into a real file — taking the repo copy if it is still on disk, and the last commit that carried it if it is not. That machine keeps the settings it was already running instead of a dangling link and Claude Code's defaults.
+
+## Why the bash path isn't in there either
 
 Claude Code takes the shell from `$SHELL`, so pointing it at bash is a matter of setting that variable when you launch it. The path, though, is different on every machine:
 
