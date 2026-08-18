@@ -36,3 +36,6 @@ for f in "$HOME/.local/bin/env" "$HOME/.cargo/env" "$HOME/.safe-chain/scripts/in
   [ -f "$f" ] && . "$f" >/dev/null
 done
 unset f
+
+# Machine-local additions, not tracked here.
+[ -f "$HOME/.bashrc.local" ] && . "$HOME/.bashrc.local"

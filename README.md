@@ -68,6 +68,8 @@ Hence a real `bashrc` here rather than a redirect to the zsh one.
 
 `bashrc` is deliberately dull: Homebrew, mise, PATH, nothing interactive. No aliases, no zoxide, no completions. Those belong in `~/.zshrc`, which is not synced, because they only matter when a human is typing.
 
+The last line sources `~/.bashrc.local` if it exists. That is where anything machine-specific goes: a tmux auto-attach, a PATH entry for a tool only one box has, an override of something set above it. It is sourced last, so it wins. Nothing breaks if the file is absent, and it is never committed here.
+
 > **It is not optional.** Homebrew on Apple Silicon lives at `/opt/homebrew/bin`, which is not on the default PATH. Without `brew shellenv` a fresh machine hands Claude a shell with no `node`, no `php`, no `rg`, and no clue why.
 
 ## Why the bash path isn't in settings.json
@@ -105,7 +107,7 @@ On the other machine, `git -C ~/dotclaude pull`. Claude reads `CLAUDE.md` at ses
 
 ## Not synced
 
-`skills/`, `projects/`, and everything else under `~/.claude` stay machine-local. So does `~/.zshrc`.
+`skills/`, `projects/`, and everything else under `~/.claude` stay machine-local. So do `~/.zshrc` and `~/.bashrc.local`.
 
 ## Known rough edges
 
