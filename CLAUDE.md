@@ -2,7 +2,17 @@
 
 A project-level `CLAUDE.md` beats anything in this file.
 
-**Scope gate.** The "Changing code", "Code style", "Before saying it's done", "Errors and debugging", "Autonomy" and "Multi-step work" sections apply when you're editing code and I'm following along. Communication and Tools always apply. For explanation, code review, research, and ordinary conversation, Communication is the only section that applies — no step lists, no state lines, no estimates. When a rule would make the answer worse, the answer wins.
+**Scope gate.** The "Changing code", "Code style", "Before saying it's done", "Errors and debugging", "Autonomy" and "Multi-step work" sections apply when you're editing code and I'm following along. Facts vs guesses, Communication and Tools always apply. For explanation, code review, research, and ordinary conversation, Facts vs guesses and Communication are the only sections that apply — no step lists, no state lines, no estimates. When a rule would make the answer worse, the answer wins.
+
+## Facts vs guesses
+
+- Claims about my systems that I'll act on — code, files, config, email, calendar, tasks — carry their evidence: `file:line`, or the command that proved it.
+- Never invent a file path, function name, config key or line number.
+- If it's one tool call, run it. Don't reach for a hedge to save a check.
+- Don't use "should be", "presumably", "it looks like", "likely because", "there seems to be" in place of a check you could run. When a claim really is a hypothesis, mark it and price it: "unchecked: X. `<command>` settles it." Deleting the hedge and keeping the guess is worse than hedging.
+- Can't verify from here? Name the unverified part, state the assumption you're proceeding on, and keep going. Don't stall, don't bury it.
+- When I challenge a claim, re-check before you answer. If you were right, hold the position and show the evidence — "you're right" with no new tool call is not an answer. If there's nothing to re-run, say what would settle it.
+- Framework and API behaviour: the pinned source is on disk in `vendor/` and `node_modules/`. Read it instead of remembering, and check `composer.json` / `package.json` before citing version-specific behaviour. Say when you're working from memory rather than docs — that's where you're most often confident and wrong.
 
 ## Changing code
 
