@@ -1,0 +1,98 @@
+{
+  "version": 3,
+  "skills": {
+    "better-writing": {
+      "source": "forjd/better-writing",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/forjd/better-writing.git",
+      "skillPath": "SKILL.md",
+      "skillFolderHash": "0f6ea786b644928b2c047cf0407ba6f2f3190c6e",
+      "installedAt": "2026-05-31T08:19:55.188Z",
+      "updatedAt": "2026-08-19T21:12:46.614Z"
+    },
+    "unslop": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/cursor/plugins.git",
+      "ref": "main",
+      "skillPath": "pstack/skills/unslop/SKILL.md",
+      "skillFolderHash": "6161508c5c7959b156ff0e4e10b510863b51f9cc",
+      "installedAt": "2026-08-19T21:09:02.393Z",
+      "updatedAt": "2026-08-19T21:09:02.393Z"
+    },
+    "grilling": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "ref": "main",
+      "skillPath": "skills/productivity/grilling/SKILL.md",
+      "skillFolderHash": "0d40d978f1a588971a11ea7ae85b208e78102dc3",
+      "installedAt": "2026-08-19T21:10:10.405Z",
+      "updatedAt": "2026-08-19T21:10:10.405Z"
+    },
+    "blast-radius": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/cursor/plugins.git",
+      "skillPath": "pstack/skills/blast-radius/SKILL.md",
+      "skillFolderHash": "b7e78173d1cee739737fa2371017a211ebe3fc8c",
+      "installedAt": "2026-08-19T21:12:34.133Z",
+      "updatedAt": "2026-08-19T21:12:34.133Z"
+    },
+    "deslop": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/cursor/plugins.git",
+      "skillPath": "cursor-team-kit/skills/deslop/SKILL.md",
+      "skillFolderHash": "ac9ba043f9dd3b3a8850de6624ec5bc12e375599",
+      "installedAt": "2026-08-19T21:12:34.135Z",
+      "updatedAt": "2026-08-19T21:12:34.135Z"
+    },
+    "how": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/cursor/plugins.git",
+      "skillPath": "pstack/skills/how/SKILL.md",
+      "skillFolderHash": "3d341663ea4e4eaf516f17f3bc48f94cf17b75d4",
+      "installedAt": "2026-08-19T21:12:34.136Z",
+      "updatedAt": "2026-08-19T21:12:34.136Z"
+    },
+    "tdd": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/cursor/plugins.git",
+      "skillPath": "pstack/skills/tdd/SKILL.md",
+      "skillFolderHash": "3a761ae539f19c61c7ae73eddbec54951d44e752",
+      "installedAt": "2026-08-19T21:12:34.136Z",
+      "updatedAt": "2026-08-19T21:12:34.136Z"
+    },
+    "why": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/cursor/plugins.git",
+      "skillPath": "pstack/skills/why/SKILL.md",
+      "skillFolderHash": "401af6846377c1f6bb712337f28252f003e9cd32",
+      "installedAt": "2026-08-19T21:12:34.137Z",
+      "updatedAt": "2026-08-19T21:12:34.137Z"
+    }
+  },
+  "dismissed": {
+    "findSkillsPrompt": true
+  },
+  "lastSelectedAgents": [
+    "amp",
+    "antigravity",
+    "antigravity-cli",
+    "cline",
+    "codex",
+    "cursor",
+    "deepagents",
+    "gemini-cli",
+    "github-copilot",
+    "kimi-code-cli",
+    "opencode",
+    "warp",
+    "zed",
+    "claude-code"
+  ]
+}

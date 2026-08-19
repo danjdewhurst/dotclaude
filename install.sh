@@ -83,6 +83,62 @@ for entry in "${LINKS[@]}"; do
   echo "Linked $target -> $src"
 done
 
+# Skills. The content lives in this repo; ~/.agents/skills is the skills CLI's
+# canonical directory and ~/.claude/skills is what Claude actually reads. Both
+# are symlinks into the repo, so a pull updates the skills and a `skills update`
+# turns into a diff here rather than a silent local drift.
+if [ -d "$REPO/skills" ]; then
+  mkdir -p "$HOME/.agents/skills" "$HOME/.claude/skills"
+
+  # The lock records where each skill came from, so `skills update` and
+  # `skills list` keep working after a fresh install.
+  lock_target="$HOME/.agents/.skill-lock.json"
+  if [ -L "$lock_target" ] && [ "$(readlink "$lock_target")" = "$REPO/skill-lock.json" ]; then
+    echo "Already linked: $lock_target"
+  else
+    if [ -e "$lock_target" ] || [ -L "$lock_target" ]; then
+      preserve "$lock_target"
+    fi
+    ln -sfn "$REPO/skill-lock.json" "$lock_target"
+    echo "Linked $lock_target -> $REPO/skill-lock.json"
+  fi
+
+  for src in "$REPO"/skills/*/; do
+    src="${src%/}"
+    [ -d "$src" ] || continue
+    name="$(basename "$src")"
+
+    canonical="$HOME/.agents/skills/$name"
+    if [ -L "$canonical" ] && [ "$(readlink "$canonical")" = "$src" ]; then
+      echo "Already linked: $canonical"
+    else
+      # A real directory here predates the repo. Identical content is redundant
+      # and gets removed; anything else is backed up, so local edits to a skill
+      # are never silently thrown away.
+      if [ -d "$canonical" ] && [ ! -L "$canonical" ] && diff -rq "$src" "$canonical" >/dev/null 2>&1; then
+        rm -rf "$canonical"
+      elif [ -e "$canonical" ] || [ -L "$canonical" ]; then
+        preserve "$canonical"
+      fi
+      ln -sfn "$src" "$canonical"
+      echo "Linked $canonical -> $src"
+    fi
+
+    # Relative, matching what the skills CLI writes itself.
+    agent_link="$HOME/.claude/skills/$name"
+    agent_dest="../../.agents/skills/$name"
+    if [ -L "$agent_link" ] && [ "$(readlink "$agent_link")" = "$agent_dest" ]; then
+      echo "Already linked: $agent_link"
+      continue
+    fi
+    if [ -e "$agent_link" ] || [ -L "$agent_link" ]; then
+      preserve "$agent_link"
+    fi
+    ln -sfn "$agent_dest" "$agent_link"
+    echo "Linked $agent_link -> $agent_dest"
+  done
+fi
+
 # Package manager detection: brew, then the common Linux families.
 SUDO=""
 if command -v brew >/dev/null; then

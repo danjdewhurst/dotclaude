@@ -107,9 +107,19 @@ git -C ~/dotclaude push
 
 On the other machine, `git -C ~/dotclaude pull`. Claude reads `CLAUDE.md` at session start, so the next session picks it up with no restart dance.
 
+## Skills
+
+`skills/` holds the agent skills verbatim, and `install.sh` links each one into `~/.agents/skills` (the skills CLI's canonical directory), then into `~/.claude/skills` where Claude reads them. `skill-lock.json` records where each came from and is linked to `~/.agents/.skill-lock.json`, so `skills list` and `skills update` keep working.
+
+Committing the content rather than replaying `skills add` on each machine means the same bytes everywhere, no GitHub round trip on setup, and no dependency on the CLI being installed. The trade is that an upstream skill only moves when you run `skills update` — which writes through the symlink and shows up here as a diff to review.
+
+`skills add -g` still works as normal; new skills land as real directories in `~/.agents/skills` and stay machine-local until you copy them into `skills/` here.
+
+All of them are other people's work, vendored unmodified. `skills/NOTICE.md` lists each one's upstream and licence — all MIT.
+
 ## Not synced
 
-`skills/`, `projects/`, and everything else under `~/.claude` stay machine-local. So do `~/.zshrc` and `~/.bashrc.local`.
+`projects/` and everything else under `~/.claude` stay machine-local. So do `~/.zshrc` and `~/.bashrc.local`.
 
 ## Known rough edges
 
@@ -125,4 +135,4 @@ On a machine without Homebrew the script installs mise with `curl https://mise.r
 
 It's my config, not a template. `CLAUDE.md` is written in first person about how I want to be worked with, and `bashrc` assumes my toolchain. Fork it and rewrite both rather than copying them and wondering why Claude keeps mentioning mise.
 
-MIT licensed. Take whatever's useful.
+MIT licensed, except the vendored skills — those belong to their authors under their own MIT terms, listed in [`skills/NOTICE.md`](skills/NOTICE.md). Take whatever's useful.
