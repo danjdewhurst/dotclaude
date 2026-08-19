@@ -80,7 +80,7 @@ The last line sources `~/.bashrc.local` if it exists. That is where anything mac
 
 `~/.claude/settings.json` is a real file on each machine, not a symlink out of this repo. What goes in it is machine-specific: MCP servers denied by UUID, notification channel, effort level. Syncing one copy across machines hands every machine another machine's answers.
 
-`install.sh` leaves an existing one alone, with one exception. A machine set up before this split still has `~/.claude/settings.json` symlinked into the repo, pointing at a file git has since deleted. The installer converts that link back into a real file, taking the repo copy if it is still on disk and the last commit that carried it if it is not. That machine keeps the settings it was already running instead of a dangling link and Claude Code's defaults.
+`install.sh` leaves an existing one alone, with one exception. A machine set up before this split still has `~/.claude/settings.json` symlinked into the repo, pointing at a file git has since deleted. The installer converts that link back into a real file. It takes the repo copy if that is still on disk, and the last commit that carried it if it is not. That machine keeps the settings it was already running instead of a dangling link and Claude Code's defaults.
 
 ## Why the bash path isn't in there either
 
@@ -93,7 +93,7 @@ Claude Code takes the shell from `$SHELL`, so pointing it at bash is a matter of
 | Linux | `/usr/bin/bash` |
 | macOS, preinstalled | `/bin/bash`, still 3.2.57. Avoid |
 
-One synced file cannot hold all four. So `install.sh` finds the newest bash 4+ on the machine and writes a marked block into `~/.zshrc` and whichever bash login file already exists, preferring `~/.profile` or `~/.bash_login` over creating a `~/.bash_profile` that would shadow them:
+One synced file cannot hold all four. So `install.sh` finds the newest bash 4+ on the machine and writes a marked block into `~/.zshrc` and whichever bash login file already exists. It prefers `~/.profile` or `~/.bash_login` over creating a `~/.bash_profile`, which would shadow them:
 
 ```bash
 # >>> dotclaude >>>
@@ -102,7 +102,7 @@ alias claude="SHELL='/opt/homebrew/bin/bash' claude"
 # <<< dotclaude <<<
 ```
 
-Those are the shells you launch `claude` from, never the synced `~/.bashrc`. Re-running rewrites the block where it already sits rather than stacking a second copy or moving it to the end of the file, and does nothing at all if it is already correct. It writes *through* a symlinked rc file instead of replacing the symlink, which matters if your `~/.zshrc` points into prezto or another dotfiles checkout. If the markers are damaged, the script leaves the file alone and warns.
+Those are the shells you launch `claude` from, never the synced `~/.bashrc`. Re-running rewrites the block where it already sits rather than stacking a second copy or moving it to the end of the file. If the block is already correct it does nothing at all. It writes *through* a symlinked rc file instead of replacing the symlink, which matters if your `~/.zshrc` points into prezto or another dotfiles checkout. If the markers are damaged, the script leaves the file alone and warns.
 
 ## Day to day
 
