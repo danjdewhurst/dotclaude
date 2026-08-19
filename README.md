@@ -15,7 +15,7 @@
 
 My global [Claude Code](https://claude.com/claude-code) config, kept in one place so a new machine takes two commands instead of an afternoon of remembering.
 
-Everything here is symlinked out of this repo into `$HOME`. Editing in place edits the repo, so there is no copy step and nothing to forget to commit.
+`install.sh` symlinks everything here into `$HOME`. Editing a file in place edits the repo, so there is no copy step and nothing to forget to commit.
 
 ```text
 ~/dotclaude/                            ~/
@@ -34,7 +34,7 @@ Everything here is symlinked out of this repo into `$HOME`. Editing in place edi
 |---|---|
 | `CLAUDE.md` | How I want Claude to work: scope, code style, how to communicate |
 | `bashrc` | The shell Claude runs commands in |
-| `skills/` | The agent skills, vendored — see [Skills](#skills) |
+| `skills/` | The agent skills, vendored. See [Skills](#skills) |
 | `skill-lock.json` | Where each skill came from, for `skills update` |
 
 ## Setup on a new machine
@@ -64,21 +64,23 @@ Run it as many times as you like. A second run installs nothing and rewrites not
 
 ## Why there's a bashrc in here
 
-Claude Code runs its Bash tool in whatever your `$SHELL` says, which for me is zsh. That works, but I'd rather the tool that runs commands on my behalf used bash: it's what the commands Claude writes assume, and it keeps its environment separate from the one I've spent years customising for typing.
+Claude Code runs its Bash tool in whatever your `$SHELL` says, which for me is zsh. That works, but I'd rather the tool that runs commands on my behalf used bash. It's what the commands Claude writes assume, and it keeps its environment separate from the one I've spent years customising for typing.
 
-Switching means bash needs config of its own, and the obvious shortcut is a trap. My first attempt was one line, `source ~/.zshrc` from `~/.bashrc`, which hands zsh syntax to bash and produces about sixty lines of `autoload: command not found`, prezto refusing to load with `old shell detected`, and mise's hooks failing on `$+functions[...]`. Worse, a stray `echo` in that file printed into the top of every command's output.
+Switching means bash needs config of its own, and the obvious shortcut is a trap. My first attempt was one line, `source ~/.zshrc` from `~/.bashrc`. That hands zsh syntax to bash, which produces about sixty lines of `autoload: command not found`, prezto refusing to load with `old shell detected`, and mise's hooks failing on `$+functions[...]`. Worse, a stray `echo` in that file printed into the top of every command's output.
 
 Hence a real `bashrc` here rather than a redirect to the zsh one.
 
 `bashrc` is deliberately dull: Homebrew, mise, PATH, nothing interactive. No aliases, no zoxide, no completions. Those belong in `~/.zshrc`, which is not synced, because they only matter when a human is typing.
 
-The last line sources `~/.bashrc.local` if it exists. That is where anything machine-specific goes: a tmux auto-attach, a PATH entry for a tool only one box has, an override of something set above it. It is sourced last, so it wins. Nothing breaks if the file is absent, and it is never committed here.
+The last line sources `~/.bashrc.local` if it exists. That is where anything machine-specific goes: a tmux auto-attach, a PATH entry for a tool only one box has, an override of something set above it. It runs last, so it wins. Nothing breaks if the file is absent, and I never commit it here.
 
 > **It is not optional.** Homebrew on Apple Silicon lives at `/opt/homebrew/bin`, which is not on the default PATH. Without `brew shellenv` a fresh machine hands Claude a shell with no `node`, no `php`, no `rg`, and no clue why.
 
 ## Why `settings.json` isn't in here
 
-`~/.claude/settings.json` is a real file on each machine, not a symlink out of this repo. What goes in it is machine-specific — MCP servers denied by UUID, notification channel, effort level — and syncing one copy across machines means every one of them gets another machine's answers. `install.sh` leaves an existing one alone, with one exception. A machine set up before this split still has `~/.claude/settings.json` symlinked into the repo, pointing at a file git has since deleted, so the installer converts that link back into a real file — taking the repo copy if it is still on disk, and the last commit that carried it if it is not. That machine keeps the settings it was already running instead of a dangling link and Claude Code's defaults.
+`~/.claude/settings.json` is a real file on each machine, not a symlink out of this repo. What goes in it is machine-specific: MCP servers denied by UUID, notification channel, effort level. Syncing one copy across machines hands every machine another machine's answers.
+
+`install.sh` leaves an existing one alone, with one exception. A machine set up before this split still has `~/.claude/settings.json` symlinked into the repo, pointing at a file git has since deleted. The installer converts that link back into a real file, taking the repo copy if it is still on disk and the last commit that carried it if it is not. That machine keeps the settings it was already running instead of a dangling link and Claude Code's defaults.
 
 ## Why the bash path isn't in there either
 
@@ -89,7 +91,7 @@ Claude Code takes the shell from `$SHELL`, so pointing it at bash is a matter of
 | macOS, Apple Silicon | `/opt/homebrew/bin/bash` |
 | macOS, Intel | `/usr/local/bin/bash` |
 | Linux | `/usr/bin/bash` |
-| macOS, preinstalled | `/bin/bash` — still 3.2.57, avoid |
+| macOS, preinstalled | `/bin/bash`, still 3.2.57. Avoid |
 
 One synced file cannot hold all four. So `install.sh` finds the newest bash 4+ on the machine and writes a marked block into `~/.zshrc` and whichever bash login file already exists, preferring `~/.profile` or `~/.bash_login` over creating a `~/.bash_profile` that would shadow them:
 
@@ -100,7 +102,7 @@ alias claude="SHELL='/opt/homebrew/bin/bash' claude"
 # <<< dotclaude <<<
 ```
 
-Those are the shells you launch `claude` from, never the synced `~/.bashrc`. Re-running replaces the block rather than stacking a second copy, and it writes *through* a symlinked rc file instead of replacing the symlink, which matters if your `~/.zshrc` points into prezto or another dotfiles checkout. If the markers are damaged, the file is left alone with a warning rather than rewritten.
+Those are the shells you launch `claude` from, never the synced `~/.bashrc`. Re-running replaces the block rather than stacking a second copy. It writes *through* a symlinked rc file instead of replacing the symlink, which matters if your `~/.zshrc` points into prezto or another dotfiles checkout. If the markers are damaged, the script leaves the file alone and warns.
 
 ## Day to day
 
@@ -115,13 +117,13 @@ On the other machine, `git -C ~/dotclaude pull`. Claude reads `CLAUDE.md` at ses
 
 ## Skills
 
-`skills/` holds the agent skills verbatim, and `install.sh` links each one into `~/.agents/skills` (the skills CLI's canonical directory), then into `~/.claude/skills` where Claude reads them. `skill-lock.json` records where each came from and is linked to `~/.agents/.skill-lock.json`, so `skills list` and `skills update` keep working.
+`skills/` holds the agent skills verbatim, and `install.sh` links each one into `~/.agents/skills` (the skills CLI's canonical directory), then into `~/.claude/skills` where Claude reads them. `skill-lock.json` records where each came from, and `~/.agents/.skill-lock.json` links to it, so `skills list` and `skills update` keep working.
 
-Committing the content rather than replaying `skills add` on each machine means the same bytes everywhere, no GitHub round trip on setup, and no dependency on the CLI being installed. The trade is that an upstream skill only moves when you run `skills update` — which writes through the symlink and shows up here as a diff to review.
+Committing the content rather than replaying `skills add` on each machine means the same bytes everywhere, no GitHub round trip on setup, and no dependency on the CLI being installed. The trade is that an upstream skill only moves when you run `skills update`, which writes through the symlink and shows up here as a diff to review.
 
-`skills add -g` still works as normal; new skills land as real directories in `~/.agents/skills` and stay machine-local until you copy them into `skills/` here.
+`skills add -g` still works as normal. New skills land as real directories in `~/.agents/skills` and stay machine-local until you copy them into `skills/` here.
 
-Seven are in here: `better-writing`, `blast-radius`, `deslop`, `grilling`, `how`, `tdd` and `unslop`. All of them are other people's work, vendored unmodified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence — all MIT.
+Seven are in here: `better-writing`, `blast-radius`, `deslop`, `grilling`, `how`, `tdd` and `unslop`. All of them are other people's work, vendored unmodified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
 
 ## Not synced
 
@@ -129,9 +131,9 @@ Seven are in here: `better-writing`, `blast-radius`, `deslop`, `grilling`, `how`
 
 ## Known rough edges
 
-Neither `ast-grep` nor `yq` is packaged for apt, dnf or pacman, so on Linux they come from mise, which carries both in its registry. Homebrew has them, so macOS uses that and only falls back to mise if the brew install fails. Debian ships `fd-find` with its binary named `fdfind`, so the script drops an `fd` symlink in `~/.local/bin` to match what Claude expects.
+Neither `ast-grep` nor `yq` is packaged for apt, dnf or pacman, so on Linux they come from mise, which carries both. Homebrew has them, so macOS uses that and only falls back to mise if the brew install fails. Debian ships `fd-find` with its binary named `fdfind`, so the script drops an `fd` symlink in `~/.local/bin` to match what Claude expects.
 
-`~/.bashrc` is replaced wholesale, not merged. On Ubuntu that means losing the distro default's history settings and colour prompt in your own interactive bash sessions. The original is kept as `~/.bashrc.bak`.
+`install.sh` replaces `~/.bashrc` wholesale instead of merging it. On Ubuntu that means losing the distro default's history settings and colour prompt in your own interactive bash sessions. It keeps the original as `~/.bashrc.bak`.
 
 The alias only affects interactive shells, so `claude` launched from a script, a cron job or an editor task still uses your login shell.
 
@@ -141,4 +143,4 @@ On a machine without Homebrew the script installs mise with `curl https://mise.r
 
 It's my config, not a template. `CLAUDE.md` is written in first person about how I want to be worked with, and `bashrc` assumes my toolchain. Fork it and rewrite both rather than copying them and wondering why Claude keeps mentioning mise.
 
-MIT licensed, except the vendored skills — those belong to their authors under their own MIT terms, listed in [`skills/NOTICE.md`](skills/NOTICE.md). Take whatever's useful.
+MIT licensed, except the vendored skills. Those belong to their authors under their own MIT terms, listed in [`skills/NOTICE.md`](skills/NOTICE.md). Take whatever's useful.
