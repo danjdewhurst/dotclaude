@@ -13,6 +13,7 @@ fixes.
 | `how` | [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack/skills/how) | 2026 Lauren Tan |
 | `tdd` | [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack/skills/tdd) | 2026 Lauren Tan |
 | `unslop` | [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack/skills/unslop) | 2026 Lauren Tan |
+| `writing-for-agents` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/productivity/writing-for-agents) | 2026 Matt Pocock |
 
 `cursor/plugins` has no repository-level licence. The two subtrees these skills come from
 carry their own: `pstack/LICENSE` and `cursor-team-kit/LICENSE`, both MIT.

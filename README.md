@@ -123,7 +123,7 @@ Committing the content rather than replaying `skills add` on each machine means 
 
 `skills add -g` still works as normal. New skills land as real directories in `~/.agents/skills` and stay machine-local until you copy them into `skills/` here.
 
-Seven are in here: `better-writing`, `blast-radius`, `deslop`, `grilling`, `how`, `tdd` and `unslop`. All of them are other people's work, vendored unmodified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
+Eight are in here: `better-writing`, `blast-radius`, `deslop`, `grilling`, `how`, `tdd`, `unslop` and `writing-for-agents`. All of them are other people's work, vendored unmodified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
 
 ## Not synced
 
