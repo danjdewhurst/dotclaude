@@ -6,26 +6,19 @@ fixes.
 
 | Skill | Upstream | Copyright |
 | --- | --- | --- |
-| `better-writing` | [forjd/better-writing](https://github.com/forjd/better-writing) | 2026 Forjd |
-| `blast-radius` | [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack/skills/blast-radius) | 2026 Lauren Tan |
-| `deslop` | [cursor/plugins](https://github.com/cursor/plugins/tree/main/cursor-team-kit/skills/deslop) | 2026 Cursor |
 | `grilling` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/productivity/grilling) | 2026 Matt Pocock |
-| `how` | [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack/skills/how) | 2026 Lauren Tan |
 | `tdd` | [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack/skills/tdd) | 2026 Lauren Tan |
 | `unslop` | [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack/skills/unslop) | 2026 Lauren Tan |
 | `writing-for-agents` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/productivity/writing-for-agents) | 2026 Matt Pocock |
 
-`cursor/plugins` has no repository-level licence. The two subtrees these skills come from
-carry their own: `pstack/LICENSE` and `cursor-team-kit/LICENSE`, both MIT.
+`cursor/plugins` has no repository-level licence. The subtree these skills come from
+carries its own, `pstack/LICENSE`, which is MIT.
 
-All four upstreams are MIT, so their terms are reproduced once below. `better-writing`
-also ships its own copy at `skills/better-writing/LICENSE`.
+Both upstreams are MIT, so their terms are reproduced once below.
 
 ## MIT License
 
-Copyright (c) 2026 Forjd
 Copyright (c) 2026 Lauren Tan
-Copyright (c) 2026 Cursor
 Copyright (c) 2026 Matt Pocock
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
