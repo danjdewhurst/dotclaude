@@ -37,5 +37,8 @@ for f in "$HOME/.local/bin/env" "$HOME/.cargo/env" "$HOME/.safe-chain/scripts/in
 done
 unset f
 
-# Machine-local additions, not tracked here.
-[ -f "$HOME/.bashrc.local" ] && . "$HOME/.bashrc.local"
+# Machine-local additions, not tracked here. An if rather than a && so the file
+# being absent doesn't leave this rc returning 1 to whatever sourced it.
+if [ -f "$HOME/.bashrc.local" ]; then
+  . "$HOME/.bashrc.local"
+fi

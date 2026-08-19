@@ -139,6 +139,28 @@ if [ -d "$REPO/skills" ]; then
   done
 fi
 
+# Prune the links this script made for skills the repo no longer carries. A pull
+# that drops one would otherwise leave a dangling link behind for good. Outside
+# the block above on purpose: removing the last skill takes `skills/` with it.
+# Only broken links pointing where we point are touched; anything else on these
+# paths belongs to the user or the skills CLI.
+for link in "$HOME"/.agents/skills/*; do
+  [ -L "$link" ] && [ ! -e "$link" ] || continue
+  case "$(readlink "$link")" in
+    "$REPO"/skills/*)
+      rm -f "$link"
+      echo "Pruned $link — no longer in the repo"
+      ;;
+  esac
+done
+
+for link in "$HOME"/.claude/skills/*; do
+  [ -L "$link" ] && [ ! -e "$link" ] || continue
+  [ "$(readlink "$link")" = "../../.agents/skills/$(basename "$link")" ] || continue
+  rm -f "$link"
+  echo "Pruned $link — no longer in the repo"
+done
+
 # Package manager detection: brew, then the common Linux families.
 SUDO=""
 if command -v brew >/dev/null; then
@@ -357,21 +379,36 @@ write_block() {
     return
   fi
 
+  comment="# Point Claude Code's Bash tool at bash instead of the login shell."
+  alias_line="alias claude=\"SHELL='$BASH_PATH' claude\""
+
+  # Rewrite the block where it already sits. Stripping and re-appending would
+  # move it to the end of the file and reorder whatever the user has after it.
   tmp="$rc.dotclaude.tmp"
   if [ "$starts" = "1" ]; then
-    [ -e "$rc.dotclaude.bak" ] || cp "$rc" "$rc.dotclaude.bak"
     awk -v s="^${MARK_START}[[:space:]]*$" -v e="^${MARK_END}[[:space:]]*$" \
-      '$0 ~ s {skip=1; next} $0 ~ e {skip=0; next} !skip {print}' "$rc" > "$tmp"
+      -v l1="$MARK_START" -v l2="$comment" -v l3="$alias_line" -v l4="$MARK_END" \
+      '$0 ~ s {print l1; print l2; print l3; print l4; skip=1; next}
+       $0 ~ e {skip=0; next}
+       !skip {print}' "$rc" > "$tmp"
   else
-    cat "$rc" > "$tmp"
+    {
+      cat "$rc"
+      echo "$MARK_START"
+      echo "$comment"
+      echo "$alias_line"
+      echo "$MARK_END"
+    } > "$tmp"
   fi
 
-  {
-    echo "$MARK_START"
-    echo "# Point Claude Code's Bash tool at bash instead of the login shell."
-    echo "alias claude=\"SHELL='$BASH_PATH' claude\""
-    echo "$MARK_END"
-  } >> "$tmp"
+  if cmp -s "$tmp" "$rc"; then
+    rm -f "$tmp"
+    echo "Already current: claude alias in $rc"
+    return
+  fi
+
+  # Before the first modification, so the backup is of the file as it was.
+  [ -e "$rc.dotclaude.bak" ] || cp "$rc" "$rc.dotclaude.bak"
 
   # Write through the symlink rather than replacing it — ~/.zshrc is often a
   # link into a dotfiles or prezto checkout.

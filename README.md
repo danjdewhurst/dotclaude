@@ -102,7 +102,7 @@ alias claude="SHELL='/opt/homebrew/bin/bash' claude"
 # <<< dotclaude <<<
 ```
 
-Those are the shells you launch `claude` from, never the synced `~/.bashrc`. Re-running replaces the block rather than stacking a second copy. It writes *through* a symlinked rc file instead of replacing the symlink, which matters if your `~/.zshrc` points into prezto or another dotfiles checkout. If the markers are damaged, the script leaves the file alone and warns.
+Those are the shells you launch `claude` from, never the synced `~/.bashrc`. Re-running rewrites the block where it already sits rather than stacking a second copy or moving it to the end of the file, and does nothing at all if it is already correct. It writes *through* a symlinked rc file instead of replacing the symlink, which matters if your `~/.zshrc` points into prezto or another dotfiles checkout. If the markers are damaged, the script leaves the file alone and warns.
 
 ## Day to day
 
@@ -120,6 +120,8 @@ On the other machine, `git -C ~/dotclaude pull`. Claude reads `CLAUDE.md` at ses
 `skills/` holds the agent skills verbatim, and `install.sh` links each one into `~/.agents/skills` (the skills CLI's canonical directory), then into `~/.claude/skills` where Claude reads them. `skill-lock.json` records where each came from, and `~/.agents/.skill-lock.json` links to it, so `skills list` and `skills update` keep working.
 
 Committing the content rather than replaying `skills add` on each machine means the same bytes everywhere, no GitHub round trip on setup, and no dependency on the CLI being installed. The trade is that an upstream skill only moves when you run `skills update`, which writes through the symlink and shows up here as a diff to review.
+
+Dropping a skill from `skills/` here removes its links on the next `install.sh`. Nothing else on those paths is touched.
 
 `skills add -g` still works as normal. New skills land as real directories in `~/.agents/skills` and stay machine-local until you copy them into `skills/` here.
 
