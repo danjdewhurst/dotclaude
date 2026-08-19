@@ -184,7 +184,7 @@ if [ "$PM" != brew ] && [ "$PM" != none ] && [ "$(id -u)" -ne 0 ]; then
   fi
 fi
 
-# Package names differ per distro. "-" means the tool isn't packaged there.
+# Package names differ per distro.
 pkg_name() {
   case "$1:$PM" in
     fd:apt)       echo "fd-find" ;;
@@ -196,7 +196,6 @@ pkg_name() {
 
 pm_install() {
   pkg="$(pkg_name "$1")"
-  [ "$pkg" = "-" ] && return 2
   case "$PM" in
     brew)   brew install "$pkg" ;;
     apt)    $SUDO apt-get install -y -qq "$pkg" ;;
