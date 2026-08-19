@@ -15,12 +15,16 @@
 
 My global [Claude Code](https://claude.com/claude-code) config, kept in one place so a new machine takes two commands instead of an afternoon of remembering.
 
-Two files are symlinked out of this repo into `$HOME`. Editing them in place edits the repo, so there is no copy step and nothing to forget to commit.
+Everything here is symlinked out of this repo into `$HOME`. Editing in place edits the repo, so there is no copy step and nothing to forget to commit.
 
 ```text
 ~/dotclaude/                            ~/
 ├── CLAUDE.md ─────────────────────────▶ .claude/CLAUDE.md
 ├── bashrc ────────────────────────────▶ .bashrc
+├── skills/
+│   ├── <skill>/ ──────────────────────▶ .agents/skills/<skill> ──▶ .claude/skills/<skill>
+│   └── NOTICE.md
+├── skill-lock.json ───────────────────▶ .agents/.skill-lock.json
 ├── install.sh
 ├── README.md
 └── LICENSE
@@ -30,6 +34,8 @@ Two files are symlinked out of this repo into `$HOME`. Editing them in place edi
 |---|---|
 | `CLAUDE.md` | How I want Claude to work: scope, code style, how to communicate |
 | `bashrc` | The shell Claude runs commands in |
+| `skills/` | The agent skills, vendored — see [Skills](#skills) |
+| `skill-lock.json` | Where each skill came from, for `skills update` |
 
 ## Setup on a new machine
 
@@ -38,7 +44,7 @@ git clone git@github.com:danjdewhurst/dotclaude.git ~/dotclaude
 ~/dotclaude/install.sh
 ```
 
-That creates `~/.claude` if it's missing, moves anything already at those paths to `<name>.bak` (timestamped if a `.bak` is already there), and links the two files. Then it installs the tools Claude leans on from Bash:
+That creates `~/.claude` and `~/.agents` if they're missing, moves anything already at those paths to `<name>.bak` (timestamped if a `.bak` is already there), and links everything into place. Then it installs the tools Claude leans on from Bash:
 
 | Tool | What Claude uses it for | macOS | Linux |
 |---|---|---|---|
@@ -115,7 +121,7 @@ Committing the content rather than replaying `skills add` on each machine means 
 
 `skills add -g` still works as normal; new skills land as real directories in `~/.agents/skills` and stay machine-local until you copy them into `skills/` here.
 
-All of them are other people's work, vendored unmodified. `skills/NOTICE.md` lists each one's upstream and licence — all MIT.
+Seven are in here: `better-writing`, `blast-radius`, `deslop`, `grilling`, `how`, `tdd` and `unslop`. All of them are other people's work, vendored unmodified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence — all MIT.
 
 ## Not synced
 
