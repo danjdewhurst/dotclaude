@@ -13,6 +13,10 @@ if [ -e "$HOME/.claude" ] && [ ! -d "$HOME/.claude" ]; then
   echo "ERROR: $HOME/.claude exists but is not a directory. Move it aside and re-run." >&2
   exit 1
 fi
+if [ -e "$HOME/.agents" ] && [ ! -d "$HOME/.agents" ]; then
+  echo "ERROR: $HOME/.agents exists but is not a directory. Move it aside and re-run." >&2
+  exit 1
+fi
 mkdir -p "$HOME/.claude"
 
 # Migration: settings.json used to be symlinked out of this repo. It is now a
@@ -26,7 +30,15 @@ migrate_settings() {
   [ -L "$target" ] || return 0
   case "$(readlink "$target")" in
     "$REPO"/settings.json) ;;
-    *) return 0 ;;
+    *)
+      # A link into a checkout that has since moved. Left in place, the jq write
+      # below would follow it and resurrect settings.json in the old checkout.
+      if [ ! -e "$target" ]; then
+        rm -f "$target"
+        echo "Removed a dangling settings.json symlink. Claude Code will write a fresh one."
+      fi
+      return 0
+      ;;
   esac
 
   if [ -e "$target" ]; then
@@ -47,19 +59,13 @@ migrate_settings() {
 
 migrate_settings
 
-# Move a real file out of the way, never clobbering an older backup. Symlinks
-# are removed rather than backed up: backing one up would overwrite the .bak
-# holding the user's only copy of the original file.
+# Move whatever is on this path out of the way, never clobbering an older
+# backup. Symlinks included: mv moves the link itself, so the user keeps it.
 preserve() {
   target="$1"
 
-  if [ -L "$target" ]; then
-    rm -f "$target"
-    return
-  fi
-
   backup="$target.bak"
-  if [ -e "$backup" ]; then
+  if [ -e "$backup" ] || [ -L "$backup" ]; then
     backup="$target.bak.$(date +%Y%m%d%H%M%S)"
   fi
   mv "$target" "$backup"
@@ -142,12 +148,15 @@ fi
 # Prune the links this script made for skills the repo no longer carries. A pull
 # that drops one would otherwise leave a dangling link behind for good. Outside
 # the block above on purpose: removing the last skill takes `skills/` with it.
-# Only broken links pointing where we point are touched; anything else on these
-# paths belongs to the user or the skills CLI.
+# Only broken links shaped like the ones we make are touched; anything else on
+# these paths belongs to the user or the skills CLI.
 for link in "$HOME"/.agents/skills/*; do
   [ -L "$link" ] && [ ! -e "$link" ] || continue
+  # Any checkout, not just the current $REPO: a link made before the repo moved
+  # is broken the same way. The name has to match, so a backup we made of an
+  # older link is left alone.
   case "$(readlink "$link")" in
-    "$REPO"/skills/*)
+    */skills/"${link##*/}")
       rm -f "$link"
       echo "Pruned $link — no longer in the repo"
       ;;
@@ -161,8 +170,21 @@ for link in "$HOME"/.claude/skills/*; do
   echo "Pruned $link — no longer in the repo"
 done
 
+# `skills add` writes the new entry into the lock, which is a symlink into this
+# repo, while the skill's files land in ~/.agents/skills outside it. Flag the
+# drift so the skill gets committed rather than lost on the next machine.
+if [ -f "$REPO/skill-lock.json" ] && command -v jq >/dev/null; then
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    [ -d "$REPO/skills/$name" ] && continue
+    echo "WARNING: skill-lock.json lists '$name' but $REPO/skills/$name does not exist." >&2
+    echo "  Copy $HOME/.agents/skills/$name into the repo and commit it, or drop the lock entry." >&2
+  done < <(jq -r '.skills // {} | keys[]' "$REPO/skill-lock.json" 2>/dev/null || true)
+fi
+
 # Package manager detection: brew, then the common Linux families.
 SUDO=""
+APT_UPDATED=""
 if command -v brew >/dev/null; then
   PM=brew
 elif command -v apt-get >/dev/null; then
@@ -198,16 +220,23 @@ pm_install() {
   pkg="$(pkg_name "$1")"
   case "$PM" in
     brew)   brew install "$pkg" ;;
-    apt)    $SUDO apt-get install -y -qq "$pkg" ;;
+    apt)
+      # Without this a fresh machine has no package lists and every install fails.
+      if [ -z "$APT_UPDATED" ]; then
+        $SUDO apt-get update -qq || echo "  apt-get update failed — carrying on."
+        APT_UPDATED=1
+      fi
+      $SUDO apt-get install -y -qq "$pkg"
+      ;;
     dnf)    $SUDO dnf install -y -q "$pkg" ;;
     pacman) $SUDO pacman -S --noconfirm --needed "$pkg" ;;
     *)      return 2 ;;
   esac
 }
 
-# Debian and Fedora rename fd to avoid a clash: the binary is `fdfind`.
-# Claude expects `fd`, so shim it into ~/.local/bin and make sure the rest of
-# this script can see it.
+# Debian renames fd to avoid a clash and ships the binary as `fdfind` (the
+# package is fd-find on both Debian and Fedora). Claude expects `fd`, so shim it
+# into ~/.local/bin and make sure the rest of this script can see it.
 shim_debian_name() {
   want="$1"
   actual="$2"
@@ -216,9 +245,14 @@ shim_debian_name() {
 
   actual_path="$(command -v "$actual")"
   mkdir -p "$HOME/.local/bin"
-  if [ "$(readlink "$HOME/.local/bin/$want" 2>/dev/null)" != "$actual_path" ]; then
-    ln -sfn "$actual_path" "$HOME/.local/bin/$want"
-    echo "Shimmed $want -> $actual_path at $HOME/.local/bin/$want"
+  shim="$HOME/.local/bin/$want"
+  # A real file here is the user's own binary, invisible only because
+  # ~/.local/bin is not on PATH yet.
+  if [ -e "$shim" ] && [ ! -L "$shim" ]; then
+    echo "WARNING: $shim exists and is not a symlink — left alone, no $want shim." >&2
+  elif [ "$(readlink "$shim" 2>/dev/null)" != "$actual_path" ]; then
+    ln -sfn "$actual_path" "$shim"
+    echo "Shimmed $want -> $actual_path at $shim"
   fi
   PATH="$HOME/.local/bin:$PATH"
   export PATH
@@ -315,8 +349,11 @@ install_portable_tool() {
 install_portable_tool ast-grep
 install_portable_tool yq
 
-# Claude Code takes its shell from $SHELL. The bash path differs per machine,
-# so it is set at launch from the shell rc rather than a file synced from this repo.
+# Claude Code takes the Bash tool's shell from env.CLAUDE_CODE_SHELL in
+# settings.json, which write_shell_setting below owns. The rc alias sets $SHELL
+# for the claude command as the fallback for a machine with no jq, a broken
+# settings.json, or a CLI old enough to predate the setting. The bash path
+# differs per machine, so neither is synced from this repo.
 bash_version_key() {
   "$1" -c 'printf "%s%03d\n" "${BASH_VERSINFO[0]}" "${BASH_VERSINFO[1]}"' 2>/dev/null || true
 }
@@ -362,7 +399,15 @@ MARK_END="# <<< dotclaude <<<"
 write_block() {
   rc="$1"
 
-  case "$(readlink "$rc" 2>/dev/null || echo "$rc")" in
+  link="$(readlink "$rc" 2>/dev/null || true)"
+  case "$link" in
+    "") link="$rc" ;;
+    /*) ;;
+    # A relative link into the repo has to be resolved against the file's own
+    # directory, or it does not look like a repo path at all.
+    *)  link="$(cd "$(dirname "$rc")/$(dirname "$link")" && pwd)/$(basename "$link")" ;;
+  esac
+  case "$link" in
     "$REPO"/*)
       echo "Skipping $rc — it is synced from the repo."
       return
@@ -372,8 +417,20 @@ write_block() {
   starts="$(grep -c "^${MARK_START}[[:space:]]*$" "$rc" || true)"
   ends="$(grep -c "^${MARK_END}[[:space:]]*$" "$rc" || true)"
 
+  damage=""
   if [ "$starts" != "$ends" ] || [ "$starts" -gt 1 ]; then
-    echo "WARNING: $rc has damaged dotclaude markers ($starts start, $ends end)." >&2
+    damage="$starts start, $ends end"
+  elif [ "$starts" = "1" ]; then
+    # An end marker above the start passes the count check, and the rewrite
+    # below would then delete everything from the start marker to the end of
+    # the file.
+    start_line="$(grep -n "^${MARK_START}[[:space:]]*$" "$rc" | cut -d: -f1)"
+    end_line="$(grep -n "^${MARK_END}[[:space:]]*$" "$rc" | cut -d: -f1)"
+    [ "$start_line" -lt "$end_line" ] || damage="end marker above start marker"
+  fi
+
+  if [ -n "$damage" ]; then
+    echo "WARNING: $rc has damaged dotclaude markers ($damage)." >&2
     echo "  Left untouched. Fix the markers by hand, or delete the block, then re-run." >&2
     return
   fi
@@ -393,6 +450,10 @@ write_block() {
   else
     {
       cat "$rc"
+      # A file with no trailing newline would glue the marker onto its last line.
+      if [ -s "$rc" ] && [ -n "$(tail -c1 "$rc")" ]; then
+        echo
+      fi
       echo "$MARK_START"
       echo "$comment"
       echo "$alias_line"
@@ -500,6 +561,7 @@ else
   done
 
   echo
-  echo "Note: the alias only applies to interactive shells. Launching claude from"
-  echo "a script or cron will still use your login shell."
+  echo "Note: settings.json is what points Claude Code's Bash tool at $BASH_PATH."
+  echo "The alias is only a fallback, and it covers login shells alone — a"
+  echo "non-login shell, a script or cron gets it from settings.json or not at all."
 fi

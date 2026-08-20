@@ -1,6 +1,6 @@
 ---
 name: unslop
-description: Cut AI tells from any writing. Must always apply.
+description: "Cut AI tells from writing. Use when writing or editing prose that is not a chat reply: commit messages, PR descriptions, docs, READMEs, emails. Also when the user asks to unslop or de-slop text."
 ---
 
 # Unslop

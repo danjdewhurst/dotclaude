@@ -13,7 +13,7 @@
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey.svg)](#setup-on-a-new-machine)
 [![Shell: bash](https://img.shields.io/badge/shell-bash-4EAA25.svg)](#why-theres-a-bashrc-in-here)
 
-My global [Claude Code](https://claude.com/claude-code) config, kept in one place so a new machine takes two commands instead of an afternoon of remembering.
+My global [Claude Code](https://claude.com/claude-code) config, kept in one place so a new machine takes a clone and a script instead of an afternoon of remembering.
 
 `install.sh` symlinks everything here into `$HOME`. Editing a file in place edits the repo, so there is no copy step and nothing to forget to commit.
 
@@ -39,8 +39,10 @@ My global [Claude Code](https://claude.com/claude-code) config, kept in one plac
 
 ## Setup on a new machine
 
+Two things have to be there first: git, and a package manager for the rest — [Homebrew](https://brew.sh) on macOS, apt, dnf or pacman on Linux. Without one the script still links everything, but it installs no tools, and on macOS it finds only the preinstalled bash 3.2, warns, and leaves the shell setting unwritten.
+
 ```bash
-git clone git@github.com:danjdewhurst/dotclaude.git ~/dotclaude
+git clone https://github.com/danjdewhurst/dotclaude.git ~/dotclaude
 ~/dotclaude/install.sh
 ```
 
@@ -48,7 +50,7 @@ That creates `~/.claude` and `~/.agents` if they're missing, moves anything alre
 
 | Tool | What Claude uses it for | macOS | Linux |
 |---|---|---|---|
-| `git` | Everything | Homebrew | apt / dnf / pacman |
+| `git` | Everything. Already there, since you cloned this | Homebrew | apt / dnf / pacman |
 | `rg` | Searching code without drowning in dependencies | Homebrew | apt / dnf / pacman |
 | `fd` | Finding files | Homebrew | apt / dnf / pacman |
 | `jq` | Reading JSON | Homebrew | apt / dnf / pacman |
@@ -64,7 +66,7 @@ Run it as many times as you like. A second run installs nothing and rewrites not
 
 ## Why there's a bashrc in here
 
-Claude Code runs its Bash tool in whatever your `$SHELL` says, which for me is zsh. That works, but I'd rather the tool that runs commands on my behalf used bash. It's what the commands Claude writes assume, and it keeps its environment separate from the one I've spent years customising for typing.
+Left to itself, Claude Code runs its Bash tool in whatever `$SHELL` says, which for me is zsh. That works, but I'd rather the tool that runs commands on my behalf used bash. It's what the commands Claude writes assume, and it keeps its environment separate from the one I've spent years customising for typing.
 
 Switching means bash needs config of its own, and the obvious shortcut is a trap. My first attempt was one line, `source ~/.zshrc` from `~/.bashrc`. That hands zsh syntax to bash, which produces about sixty lines of `autoload: command not found`, prezto refusing to load with `old shell detected`, and mise's hooks failing on `$+functions[...]`. Worse, a stray `echo` in that file printed into the top of every command's output.
 
@@ -137,11 +139,11 @@ Dropping a skill from `skills/` here removes its links on the next `install.sh`.
 
 `skills add -g` still works as normal. New skills land as real directories in `~/.agents/skills` and stay machine-local until you copy them into `skills/` here.
 
-Four are in here: `grilling`, `tdd`, `unslop` and `writing-for-agents`. All of them are other people's work, vendored unmodified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
+Four are in here: `grilling`, `tdd`, `unslop` and `writing-for-agents`. All of them started as other people's work, vendored and then locally modified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
 
 ## Not synced
 
-`projects/` and everything else under `~/.claude` stay machine-local. So do `~/.zshrc` and `~/.bashrc.local`.
+`projects/`, `settings.json`, and anything else under `~/.claude` this repo doesn't link stay machine-local. So do `~/.zshrc` and `~/.bashrc.local`.
 
 ## Known rough edges
 

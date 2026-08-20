@@ -1,8 +1,8 @@
 # Third-party skills
 
-Everything under `skills/` was written by someone else and is vendored here unmodified.
-Each entry links to where it came from; upstream is the place to file issues or send
-fixes.
+The skills here were written by the authors listed below and vendored from their upstream
+sources. This repo carries local modifications, so what runs here differs from upstream.
+Upstream is still the place to file issues or send fixes. This file is my own.
 
 | Skill | Upstream | Copyright |
 | --- | --- | --- |

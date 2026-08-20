@@ -25,6 +25,7 @@
       "source": "cursor/plugins",
       "sourceType": "github",
       "sourceUrl": "https://github.com/cursor/plugins.git",
+      "ref": "main",
       "skillPath": "pstack/skills/tdd/SKILL.md",
       "skillFolderHash": "3a761ae539f19c61c7ae73eddbec54951d44e752",
       "installedAt": "2026-08-19T21:12:34.136Z",
