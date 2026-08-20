@@ -13,17 +13,18 @@
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey.svg)](#setup-on-a-new-machine)
 [![Shell: bash](https://img.shields.io/badge/shell-bash-4EAA25.svg)](#why-theres-a-bashrc-in-here)
 
-My global [Claude Code](https://claude.com/claude-code) config, kept in one place so a new machine takes a clone and a script instead of an afternoon of remembering.
+My global [Claude Code](https://claude.com/claude-code) config, kept in one place so a new machine takes a clone and a script instead of an afternoon of remembering. The same files are linked where Codex and other agents look, so one repo configures all of them. See [Other agents](#other-agents).
 
 `install.sh` symlinks everything here into `$HOME`. Editing a file in place edits the repo, so there is no copy step and nothing to forget to commit.
 
 ```text
 ~/dotclaude/                            ~/
-├── CLAUDE.md ─────────────────────────▶ .claude/CLAUDE.md
+├── CLAUDE.md ─────────────────────────▶ .claude/CLAUDE.md, {.agents,.codex}/AGENTS.md
 ├── bashrc ────────────────────────────▶ .bashrc
 ├── skills/
-│   ├── <skill>/ ──────────────────────▶ .claude/skills/<skill>
+│   ├── <skill>/ ──────────────────────▶ {.claude,.agents,.codex}/skills/<skill>
 │   └── NOTICE.md
+├── agents.conf
 ├── install.sh
 ├── README.md
 └── LICENSE
@@ -34,6 +35,7 @@ My global [Claude Code](https://claude.com/claude-code) config, kept in one plac
 | `CLAUDE.md` | How I want Claude to work: scope, code style, how to communicate |
 | `bashrc` | The shell Claude runs commands in |
 | `skills/` | The agent skills, vendored. See [Skills](#skills) |
+| `agents.conf` | Which agents the links go to. See [Other agents](#other-agents) |
 
 ## Setup on a new machine
 
@@ -44,7 +46,7 @@ git clone https://github.com/danjdewhurst/dotclaude.git ~/dotclaude
 ~/dotclaude/install.sh
 ```
 
-That creates `~/.claude` if it's missing, moves anything already at those paths to `<name>.bak` (timestamped if a `.bak` is already there), and links everything into place. Then it installs the tools Claude leans on from Bash:
+That creates the agent directories `agents.conf` lists if they're missing, moves anything already at those paths to `<name>.bak` (timestamped if a `.bak` is already there), and links everything into place. Then it installs the tools Claude leans on from Bash:
 
 | Tool | What Claude uses it for | macOS | Linux |
 |---|---|---|---|
@@ -129,15 +131,31 @@ On the other machine, `git -C ~/dotclaude pull`. Claude reads `CLAUDE.md` at ses
 
 ## Skills
 
-`skills/` holds the agent skills verbatim, and `install.sh` links each one straight into `~/.claude/skills`, where Claude reads them. Committing the content means the same bytes on every machine and nothing to install first. This repo used to route the links through `~/.agents/skills` and keep a lock file so the skills CLI could update them, but every skill here has since been modified locally, so a CLI update would stomp those edits. The plumbing came out and updates are now manual: diff a skill against its upstream and merge by hand.
+`skills/` holds the agent skills verbatim, and `install.sh` links each one straight into the `skills/` directory of every agent in `agents.conf`: `~/.claude/skills`, where Claude reads them, plus `~/.agents/skills` and `~/.codex/skills` by default. Committing the content means the same bytes on every machine and nothing to install first. This repo used to route the `~/.claude` links *through* `~/.agents/skills` and keep a lock file so the skills CLI could update them, but every skill here has since been modified locally, so a CLI update would stomp those edits. That plumbing stays gone. Every link points straight into the repo, there is no lock file, and updates are manual: diff a skill against its upstream and merge by hand.
 
-Dropping a skill from `skills/` here removes its link on the next `install.sh`. Nothing else in `~/.claude/skills` is touched.
+Dropping a skill from `skills/` here removes all of its links on the next `install.sh`. Nothing else in those directories is touched, so skills Codex installed for itself sit untouched next to the linked ones.
 
 Four are in here: `grilling`, `tdd`, `unslop` and `writing-for-agents`. All of them started as other people's work, vendored and then locally modified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
 
+## Other agents
+
+The same config goes where other agents read it, and which agents that is lives in `agents.conf` rather than the script. Each entry is `<dir>:<filename>`: the directory is created, `CLAUDE.md` is linked into it under that filename, and the skills land in its `skills/` subdirectory. The shipped list is Claude Code, the shared `~/.agents` directory, and [Codex](https://developers.openai.com/codex/cli/):
+
+```bash
+AGENT_DIRS=(
+  "$HOME/.claude:CLAUDE.md"
+  "$HOME/.agents:AGENTS.md"
+  "$HOME/.codex:AGENTS.md"
+)
+```
+
+To change the list on one machine, put the same syntax in `~/.dotclaude.local`. The script sources it after `agents.conf`, so it wins, and like `~/.bashrc.local` it never gets committed here. `AGENT_DIRS+=("$HOME/.gemini:GEMINI.md")` adds an agent, redefining the array replaces the list. Removing an entry stops the linking but leaves the links already on disk. Delete those by hand.
+
+One caveat. `CLAUDE.md` is written for Claude Code and names its skills and tools directly, so an agent reading it through `AGENTS.md` will hit instructions it can't act on. That's the trade for one file instead of one per agent, made knowingly.
+
 ## Not synced
 
-`projects/`, `settings.json`, and anything else under `~/.claude` this repo doesn't link stay machine-local. So do `~/.zshrc` and `~/.bashrc.local`.
+`projects/`, `settings.json`, and anything else under `~/.claude` this repo doesn't link stay machine-local. So do `~/.zshrc`, `~/.bashrc.local` and `~/.dotclaude.local`.
 
 ## Known rough edges
 

@@ -3,17 +3,40 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Which agents get the config. agents.conf ships the defaults; a machine adds
+# its own or redefines the list in ~/.dotclaude.local, sourced second so it
+# wins and never committed here.
+. "$REPO/agents.conf"
+if [ -f "$HOME/.dotclaude.local" ]; then
+  . "$HOME/.dotclaude.local"
+fi
+
 # repo file -> where it goes
 LINKS=(
-  "CLAUDE.md:$HOME/.claude/CLAUDE.md"
   "bashrc:$HOME/.bashrc"
 )
 
-if [ -e "$HOME/.claude" ] && [ ! -d "$HOME/.claude" ]; then
-  echo "ERROR: $HOME/.claude exists but is not a directory. Move it aside and re-run." >&2
-  exit 1
-fi
-mkdir -p "$HOME/.claude"
+AGENT_SKILL_DIRS=()
+for entry in ${AGENT_DIRS[@]+"${AGENT_DIRS[@]}"}; do
+  case "$entry" in
+    *:*) ;;
+    *)
+      echo "WARNING: AGENT_DIRS entry '$entry' is not <dir>:<filename> — skipped." >&2
+      continue
+      ;;
+  esac
+  dir="${entry%:*}"
+  name="${entry##*:}"
+
+  if [ -e "$dir" ] && [ ! -d "$dir" ]; then
+    echo "ERROR: $dir exists but is not a directory. Move it aside and re-run." >&2
+    exit 1
+  fi
+  mkdir -p "$dir"
+
+  LINKS+=("CLAUDE.md:$dir/$name")
+  AGENT_SKILL_DIRS+=("$dir/skills")
+done
 
 # Migration: settings.json used to be symlinked out of this repo. It is now a
 # real per-machine file, so a machine set up before that change is left with a
@@ -86,25 +109,27 @@ for entry in "${LINKS[@]}"; do
 done
 
 # Skills. The content lives in this repo; ~/.claude/skills is what Claude
-# reads. Each skill is a direct symlink into the repo, so a pull updates it.
-if [ -d "$REPO/skills" ]; then
-  mkdir -p "$HOME/.claude/skills"
+# reads, and ~/.agents/skills is the shared directory other agents look in.
+# Each skill is a direct symlink into the repo, so a pull updates it.
+link_skills() {
+  dest="$1"
+  mkdir -p "$dest"
 
   for src in "$REPO"/skills/*/; do
     src="${src%/}"
     [ -d "$src" ] || continue
     name="$(basename "$src")"
 
-    link="$HOME/.claude/skills/$name"
+    link="$dest/$name"
     if [ -L "$link" ] && [ "$(readlink "$link")" = "$src" ]; then
       echo "Already linked: $link"
       continue
     fi
 
-    # Skills used to route through ~/.agents; a link of that shape is ours to
-    # replace. A real directory with identical content is redundant and gets
-    # removed; anything else is backed up, so local edits to a skill are never
-    # silently thrown away.
+    # Skills used to route ~/.claude through ~/.agents; a link of that shape is
+    # ours to replace. A real directory with identical content is redundant and
+    # gets removed; anything else is backed up, so local edits to a skill are
+    # never silently thrown away.
     if [ -L "$link" ] && [ "$(readlink "$link")" = "../../.agents/skills/$name" ]; then
       rm -f "$link"
     elif [ -d "$link" ] && [ ! -L "$link" ] && diff -rq "$src" "$link" >/dev/null 2>&1; then
@@ -115,41 +140,26 @@ if [ -d "$REPO/skills" ]; then
     ln -sfn "$src" "$link"
     echo "Linked $link -> $src"
   done
-fi
 
-# Prune the links this script made for skills the repo no longer carries. A
-# pull that drops one would otherwise leave a dangling link behind for good.
-# Only broken links shaped like the ones we make (any checkout, not just the
-# current $REPO: a link made before the repo moved is broken the same way) are
-# touched; anything else on this path belongs to the user.
-for link in "$HOME"/.claude/skills/*; do
-  [ -L "$link" ] && [ ! -e "$link" ] || continue
-  case "$(readlink "$link")" in
-    */skills/"${link##*/}")
-      rm -f "$link"
-      echo "Pruned $link — no longer in the repo"
-      ;;
-  esac
-done
+  # Prune the links this script made for skills the repo no longer carries. A
+  # pull that drops one would otherwise leave a dangling link behind for good.
+  # Only broken links shaped like the ones we make (any checkout, not just the
+  # current $REPO: a link made before the repo moved is broken the same way)
+  # are touched; anything else on this path belongs to the user.
+  for link in "$dest"/*; do
+    [ -L "$link" ] && [ ! -e "$link" ] || continue
+    case "$(readlink "$link")" in
+      */skills/"${link##*/}")
+        rm -f "$link"
+        echo "Pruned $link — no longer in the repo"
+        ;;
+    esac
+  done
+}
 
-# Migration: skills used to be linked into ~/.agents/skills (the skills CLI's
-# canonical directory) with the lock file symlinked alongside. Remove the links
-# this script made there; real directories the CLI installed are left alone.
-if [ -d "$HOME/.agents/skills" ]; then
-  for link in "$HOME"/.agents/skills/*; do
-    [ -L "$link" ] || continue
-    name="${link##*/}"
-    if [ "$(readlink "$link")" = "$REPO/skills/$name" ]; then
-      rm -f "$link"
-      echo "Removed $link — skills no longer route through ~/.agents"
-    elif [ ! -e "$link" ]; then
-      case "$(readlink "$link")" in
-        */skills/"$name")
-          rm -f "$link"
-          echo "Removed $link — skills no longer route through ~/.agents"
-          ;;
-      esac
-    fi
+if [ -d "$REPO/skills" ]; then
+  for dest in ${AGENT_SKILL_DIRS[@]+"${AGENT_SKILL_DIRS[@]}"}; do
+    link_skills "$dest"
   done
 fi
 lock="$HOME/.agents/.skill-lock.json"
@@ -464,6 +474,9 @@ write_block() {
 # it owns and leaves everything else in there alone.
 write_shell_setting() {
   settings="$HOME/.claude/settings.json"
+  # ~/.claude usually exists from the linking above, but the agents config can
+  # drop the claude entry and this write must still land.
+  mkdir -p "$HOME/.claude"
 
   if ! command -v jq >/dev/null; then
     echo "WARNING: jq is unavailable, so $settings was left alone." >&2
