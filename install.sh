@@ -416,10 +416,53 @@ write_block() {
   echo "Updated claude alias in $rc"
 }
 
+# Claude Code reads the Bash tool's shell from env.CLAUDE_CODE_SHELL in
+# settings.json. That file is per-machine, so the installer merges the one key
+# it owns and leaves everything else in there alone.
+write_shell_setting() {
+  settings="$HOME/.claude/settings.json"
+
+  if ! command -v jq >/dev/null; then
+    echo "WARNING: jq is unavailable, so $settings was left alone." >&2
+    echo "  Add by hand: \"env\": { \"CLAUDE_CODE_SHELL\": \"$BASH_PATH\" }" >&2
+    return
+  fi
+
+  if [ ! -e "$settings" ]; then
+    jq -n --arg shell "$BASH_PATH" '{env: {CLAUDE_CODE_SHELL: $shell}}' > "$settings"
+    echo "Created $settings with CLAUDE_CODE_SHELL=$BASH_PATH"
+    return
+  fi
+
+  if ! jq -e . "$settings" >/dev/null 2>&1; then
+    echo "WARNING: $settings is not valid JSON. Left untouched." >&2
+    echo "  Fix it and re-run, or add: \"env\": { \"CLAUDE_CODE_SHELL\": \"$BASH_PATH\" }" >&2
+    return
+  fi
+
+  if [ "$(jq -r '.env.CLAUDE_CODE_SHELL // empty' "$settings")" = "$BASH_PATH" ]; then
+    echo "Already current: CLAUDE_CODE_SHELL in $settings"
+    return
+  fi
+
+  tmp="$settings.dotclaude.tmp"
+  jq --arg shell "$BASH_PATH" '.env.CLAUDE_CODE_SHELL = $shell' "$settings" > "$tmp"
+
+  [ -e "$settings.dotclaude.bak" ] || cp "$settings" "$settings.dotclaude.bak"
+
+  # Write through the file rather than replacing it, so a settings.json someone
+  # has symlinked out of their own dotfiles keeps its link.
+  cat "$tmp" > "$settings"
+  rm -f "$tmp"
+  echo "Set CLAUDE_CODE_SHELL=$BASH_PATH in $settings"
+}
+
 if [ -z "${BASH_PATH:-}" ]; then
   echo "WARNING: no bash 4+ found. Claude Code will keep using your login shell."
 else
   echo "Claude shell: $BASH_PATH ($("$BASH_PATH" --version | sed -n 1p))"
+
+  write_shell_setting
 
   login_shell="$(basename "${SHELL:-}")"
 

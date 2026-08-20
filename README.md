@@ -80,11 +80,13 @@ The last line sources `~/.bashrc.local` if it exists. That is where anything mac
 
 `~/.claude/settings.json` is a real file on each machine, not a symlink out of this repo. What goes in it is machine-specific: MCP servers denied by UUID, notification channel, effort level. Syncing one copy across machines hands every machine another machine's answers.
 
-`install.sh` leaves an existing one alone, with one exception. A machine set up before this split still has `~/.claude/settings.json` symlinked into the repo, pointing at a file git has since deleted. The installer converts that link back into a real file. It takes the repo copy if that is still on disk, and the last commit that carried it if it is not. That machine keeps the settings it was already running instead of a dangling link and Claude Code's defaults.
+`install.sh` writes exactly one key into it, `env.CLAUDE_CODE_SHELL`, for the reason in the next section. The merge goes through `jq`, so every other key survives, and the first write leaves a `settings.json.dotclaude.bak` alongside. If there is no file yet it writes a minimal one holding just that key. If the file is there but the JSON is broken it says so and changes nothing.
 
-## Why the bash path isn't in there either
+It also repairs one legacy case. A machine set up before this split still has `~/.claude/settings.json` symlinked into the repo, pointing at a file git has since deleted. The installer converts that link back into a real file. It takes the repo copy if that is still on disk, and the last commit that carried it if it is not. That machine keeps the settings it was already running instead of a dangling link and Claude Code's defaults.
 
-Claude Code takes the shell from `$SHELL`, so pointing it at bash is a matter of setting that variable when you launch it. The path, though, is different on every machine:
+## Why the bash path is written per machine
+
+Claude Code reads the Bash tool's shell from `env.CLAUDE_CODE_SHELL` in `settings.json`, and only falls back to `$SHELL` and a scan of `/bin`, `/usr/bin`, `/usr/local/bin` and `/opt/homebrew/bin` when that key is missing or does not point at a runnable bash or zsh. So that key is the thing to set. Its value is different on every machine:
 
 | Machine | bash lives at |
 |---|---|
@@ -93,7 +95,17 @@ Claude Code takes the shell from `$SHELL`, so pointing it at bash is a matter of
 | Linux | `/usr/bin/bash` |
 | macOS, preinstalled | `/bin/bash`, still 3.2.57. Avoid |
 
-One synced file cannot hold all four. So `install.sh` finds the newest bash 4+ on the machine and writes a marked block into `~/.zshrc` and whichever bash login file already exists. It prefers `~/.profile` or `~/.bash_login` over creating a `~/.bash_profile`, which would shadow them:
+One synced file cannot hold all four. So `install.sh` finds the newest bash 4+ on the machine and merges the path it found into `~/.claude/settings.json`:
+
+```json
+{
+  "env": {
+    "CLAUDE_CODE_SHELL": "/opt/homebrew/bin/bash"
+  }
+}
+```
+
+The same path also goes into a marked block in `~/.zshrc` and whichever bash login file already exists, as an alias setting `$SHELL` for that one command. That is the fallback for a machine where the key could not be written, one with no `jq` or a `settings.json` whose JSON is broken. It prefers `~/.profile` or `~/.bash_login` over creating a `~/.bash_profile`, which would shadow them:
 
 ```bash
 # >>> dotclaude >>>
@@ -137,7 +149,7 @@ Neither `ast-grep` nor `yq` is packaged for apt, dnf or pacman, so on Linux they
 
 `install.sh` replaces `~/.bashrc` wholesale instead of merging it. On Ubuntu that means losing the distro default's history settings and colour prompt in your own interactive bash sessions. It keeps the original as `~/.bashrc.bak`.
 
-The alias only affects interactive shells, so `claude` launched from a script, a cron job or an editor task still uses your login shell.
+The alias only affects interactive shells, so `claude` launched from a script, a cron job or an editor task never sees it. Those runs rely on the `settings.json` key, which Claude Code reads however it was started.
 
 On a machine without Homebrew the script installs mise with `curl https://mise.run | sh`. That's the vendor's documented method, but it is still piping a remote script into a shell. Swap it for [their apt repo](https://mise.jdx.dev/installing-mise.html) if that bothers you.
 
