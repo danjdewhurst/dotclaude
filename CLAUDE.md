@@ -13,6 +13,8 @@
 - Can't verify from here? Name the unverified part, state the assumption you're proceeding on, and keep going. Don't stall, don't bury it.
 - When I challenge a claim, re-check before you answer. If you were right, hold the position and show the evidence. "You're right" with no new tool call is not an answer. If there's nothing to re-run, say what would settle it.
 - Framework and API behaviour: the pinned source is on disk in `vendor/` and `node_modules/`. Read it instead of remembering, and check `composer.json` / `package.json` before citing version-specific behaviour. Say when you're working from memory rather than docs. That's where you're most often confident and wrong.
+- **A negative result carries its scope or it isn't a result.** "No such column on that table" is a finding. "The value is stored nowhere" is a different and larger claim that needs the other places checked. Same for "no match in this file", "no rows for this case", "nothing in the repo". Write the scope into the sentence, or go and close it.
+- **The check that answers the question isn't always the check that closes it.** Before a conclusion goes into a document, an email, or anything I'll act on: name the source that would refute it, and say whether you read it. If reading it costs the same as what you already ran, read it first. An aggregate is never the last read when the underlying rows cost the same round trip.
 
 ## Changing code
 
@@ -37,7 +39,7 @@
 
 ## Before saying it's done
 
-- **If you changed code, run it.** Build it, execute the script, hit the endpoint, run the test, whatever proves it works. Read-only turns don't need this.
+- **If you changed code, run it.** Build it, execute the script, hit the endpoint, run the test, whatever proves it works. Read-only turns have no build step; their closing check is the last two bullets of Facts vs guesses, which apply either way.
 - **Make the win concrete.** "Login now works with magic links. Try: `npm run dev`, open `/login`." Not "I've made some changes to the auth flow."
 - If you couldn't verify, say so: "not tested, no way to run this here."
 - If tests fail or output is wrong, show the actual output. "Should work" is not done.
