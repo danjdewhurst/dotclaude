@@ -7,7 +7,7 @@
       "sourceUrl": "https://github.com/cursor/plugins.git",
       "ref": "main",
       "skillPath": "pstack/skills/unslop/SKILL.md",
-      "skillFolderHash": "6161508c5c7959b156ff0e4e10b510863b51f9cc",
+      "skillFolderHash": "2b8d11a7d18d4ec1cc286596e4cde7eafe356090",
       "installedAt": "2026-08-19T21:09:02.393Z",
       "updatedAt": "2026-08-19T21:09:02.393Z"
     },
@@ -17,7 +17,7 @@
       "sourceUrl": "https://github.com/mattpocock/skills.git",
       "ref": "main",
       "skillPath": "skills/productivity/grilling/SKILL.md",
-      "skillFolderHash": "0d40d978f1a588971a11ea7ae85b208e78102dc3",
+      "skillFolderHash": "bfb888294611ef5b2ea28efe886f0d58a22c7be5",
       "installedAt": "2026-08-19T21:10:10.405Z",
       "updatedAt": "2026-08-19T21:10:10.405Z"
     },
@@ -27,7 +27,7 @@
       "sourceUrl": "https://github.com/cursor/plugins.git",
       "ref": "main",
       "skillPath": "pstack/skills/tdd/SKILL.md",
-      "skillFolderHash": "3a761ae539f19c61c7ae73eddbec54951d44e752",
+      "skillFolderHash": "1ef9e4d5d8c4ed7200ea2f94c3caf722e02acc20",
       "installedAt": "2026-08-19T21:12:34.136Z",
       "updatedAt": "2026-08-19T21:12:34.136Z"
     },
@@ -37,7 +37,7 @@
       "sourceUrl": "https://github.com/mattpocock/skills.git",
       "ref": "main",
       "skillPath": "skills/productivity/writing-for-agents/SKILL.md",
-      "skillFolderHash": "ad2925850efb8973a72d2e666f7a975f9a2d4a9b",
+      "skillFolderHash": "26b7535350f9b509751105c43a9ca850df17ff18",
       "installedAt": "2026-08-19T21:36:21.905Z",
       "updatedAt": "2026-08-19T21:36:21.905Z"
     }
