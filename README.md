@@ -22,9 +22,8 @@ My global [Claude Code](https://claude.com/claude-code) config, kept in one plac
 ├── CLAUDE.md ─────────────────────────▶ .claude/CLAUDE.md
 ├── bashrc ────────────────────────────▶ .bashrc
 ├── skills/
-│   ├── <skill>/ ──────────────────────▶ .agents/skills/<skill> ──▶ .claude/skills/<skill>
+│   ├── <skill>/ ──────────────────────▶ .claude/skills/<skill>
 │   └── NOTICE.md
-├── skill-lock.json ───────────────────▶ .agents/.skill-lock.json
 ├── install.sh
 ├── README.md
 └── LICENSE
@@ -35,7 +34,6 @@ My global [Claude Code](https://claude.com/claude-code) config, kept in one plac
 | `CLAUDE.md` | How I want Claude to work: scope, code style, how to communicate |
 | `bashrc` | The shell Claude runs commands in |
 | `skills/` | The agent skills, vendored. See [Skills](#skills) |
-| `skill-lock.json` | Where each skill came from, for `skills update` |
 
 ## Setup on a new machine
 
@@ -46,7 +44,7 @@ git clone https://github.com/danjdewhurst/dotclaude.git ~/dotclaude
 ~/dotclaude/install.sh
 ```
 
-That creates `~/.claude` and `~/.agents` if they're missing, moves anything already at those paths to `<name>.bak` (timestamped if a `.bak` is already there), and links everything into place. Then it installs the tools Claude leans on from Bash:
+That creates `~/.claude` if it's missing, moves anything already at those paths to `<name>.bak` (timestamped if a `.bak` is already there), and links everything into place. Then it installs the tools Claude leans on from Bash:
 
 | Tool | What Claude uses it for | macOS | Linux |
 |---|---|---|---|
@@ -131,13 +129,9 @@ On the other machine, `git -C ~/dotclaude pull`. Claude reads `CLAUDE.md` at ses
 
 ## Skills
 
-`skills/` holds the agent skills verbatim, and `install.sh` links each one into `~/.agents/skills` (the skills CLI's canonical directory), then into `~/.claude/skills` where Claude reads them. `skill-lock.json` records where each came from, and `~/.agents/.skill-lock.json` links to it, so `skills list` and `skills update` keep working.
+`skills/` holds the agent skills verbatim, and `install.sh` links each one straight into `~/.claude/skills`, where Claude reads them. Committing the content means the same bytes on every machine and nothing to install first. This repo used to route the links through `~/.agents/skills` and keep a lock file so the skills CLI could update them, but every skill here has since been modified locally, so a CLI update would stomp those edits. The plumbing came out and updates are now manual: diff a skill against its upstream and merge by hand.
 
-Committing the content rather than replaying `skills add` on each machine means the same bytes everywhere, no GitHub round trip on setup, and no dependency on the CLI being installed. The trade is that an upstream skill only moves when you run `skills update`, which writes through the symlink and shows up here as a diff to review.
-
-Dropping a skill from `skills/` here removes its links on the next `install.sh`. Nothing else on those paths is touched.
-
-`skills add -g` still works as normal. New skills land as real directories in `~/.agents/skills` and stay machine-local until you copy them into `skills/` here.
+Dropping a skill from `skills/` here removes its link on the next `install.sh`. Nothing else in `~/.claude/skills` is touched.
 
 Four are in here: `grilling`, `tdd`, `unslop` and `writing-for-agents`. All of them started as other people's work, vendored and then locally modified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
 

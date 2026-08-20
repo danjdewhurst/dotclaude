@@ -13,10 +13,6 @@ if [ -e "$HOME/.claude" ] && [ ! -d "$HOME/.claude" ]; then
   echo "ERROR: $HOME/.claude exists but is not a directory. Move it aside and re-run." >&2
   exit 1
 fi
-if [ -e "$HOME/.agents" ] && [ ! -d "$HOME/.agents" ]; then
-  echo "ERROR: $HOME/.agents exists but is not a directory. Move it aside and re-run." >&2
-  exit 1
-fi
 mkdir -p "$HOME/.claude"
 
 # Migration: settings.json used to be symlinked out of this repo. It is now a
@@ -89,72 +85,45 @@ for entry in "${LINKS[@]}"; do
   echo "Linked $target -> $src"
 done
 
-# Skills. The content lives in this repo; ~/.agents/skills is the skills CLI's
-# canonical directory and ~/.claude/skills is what Claude actually reads. Both
-# are symlinks into the repo, so a pull updates the skills and a `skills update`
-# turns into a diff here rather than a silent local drift.
+# Skills. The content lives in this repo; ~/.claude/skills is what Claude
+# reads. Each skill is a direct symlink into the repo, so a pull updates it.
 if [ -d "$REPO/skills" ]; then
-  mkdir -p "$HOME/.agents/skills" "$HOME/.claude/skills"
-
-  # The lock records where each skill came from, so `skills update` and
-  # `skills list` keep working after a fresh install.
-  lock_target="$HOME/.agents/.skill-lock.json"
-  if [ -L "$lock_target" ] && [ "$(readlink "$lock_target")" = "$REPO/skill-lock.json" ]; then
-    echo "Already linked: $lock_target"
-  else
-    if [ -e "$lock_target" ] || [ -L "$lock_target" ]; then
-      preserve "$lock_target"
-    fi
-    ln -sfn "$REPO/skill-lock.json" "$lock_target"
-    echo "Linked $lock_target -> $REPO/skill-lock.json"
-  fi
+  mkdir -p "$HOME/.claude/skills"
 
   for src in "$REPO"/skills/*/; do
     src="${src%/}"
     [ -d "$src" ] || continue
     name="$(basename "$src")"
 
-    canonical="$HOME/.agents/skills/$name"
-    if [ -L "$canonical" ] && [ "$(readlink "$canonical")" = "$src" ]; then
-      echo "Already linked: $canonical"
-    else
-      # A real directory here predates the repo. Identical content is redundant
-      # and gets removed; anything else is backed up, so local edits to a skill
-      # are never silently thrown away.
-      if [ -d "$canonical" ] && [ ! -L "$canonical" ] && diff -rq "$src" "$canonical" >/dev/null 2>&1; then
-        rm -rf "$canonical"
-      elif [ -e "$canonical" ] || [ -L "$canonical" ]; then
-        preserve "$canonical"
-      fi
-      ln -sfn "$src" "$canonical"
-      echo "Linked $canonical -> $src"
-    fi
-
-    # Relative, matching what the skills CLI writes itself.
-    agent_link="$HOME/.claude/skills/$name"
-    agent_dest="../../.agents/skills/$name"
-    if [ -L "$agent_link" ] && [ "$(readlink "$agent_link")" = "$agent_dest" ]; then
-      echo "Already linked: $agent_link"
+    link="$HOME/.claude/skills/$name"
+    if [ -L "$link" ] && [ "$(readlink "$link")" = "$src" ]; then
+      echo "Already linked: $link"
       continue
     fi
-    if [ -e "$agent_link" ] || [ -L "$agent_link" ]; then
-      preserve "$agent_link"
+
+    # Skills used to route through ~/.agents; a link of that shape is ours to
+    # replace. A real directory with identical content is redundant and gets
+    # removed; anything else is backed up, so local edits to a skill are never
+    # silently thrown away.
+    if [ -L "$link" ] && [ "$(readlink "$link")" = "../../.agents/skills/$name" ]; then
+      rm -f "$link"
+    elif [ -d "$link" ] && [ ! -L "$link" ] && diff -rq "$src" "$link" >/dev/null 2>&1; then
+      rm -rf "$link"
+    elif [ -e "$link" ] || [ -L "$link" ]; then
+      preserve "$link"
     fi
-    ln -sfn "$agent_dest" "$agent_link"
-    echo "Linked $agent_link -> $agent_dest"
+    ln -sfn "$src" "$link"
+    echo "Linked $link -> $src"
   done
 fi
 
-# Prune the links this script made for skills the repo no longer carries. A pull
-# that drops one would otherwise leave a dangling link behind for good. Outside
-# the block above on purpose: removing the last skill takes `skills/` with it.
-# Only broken links shaped like the ones we make are touched; anything else on
-# these paths belongs to the user or the skills CLI.
-for link in "$HOME"/.agents/skills/*; do
+# Prune the links this script made for skills the repo no longer carries. A
+# pull that drops one would otherwise leave a dangling link behind for good.
+# Only broken links shaped like the ones we make (any checkout, not just the
+# current $REPO: a link made before the repo moved is broken the same way) are
+# touched; anything else on this path belongs to the user.
+for link in "$HOME"/.claude/skills/*; do
   [ -L "$link" ] && [ ! -e "$link" ] || continue
-  # Any checkout, not just the current $REPO: a link made before the repo moved
-  # is broken the same way. The name has to match, so a backup we made of an
-  # older link is left alone.
   case "$(readlink "$link")" in
     */skills/"${link##*/}")
       rm -f "$link"
@@ -163,23 +132,36 @@ for link in "$HOME"/.agents/skills/*; do
   esac
 done
 
-for link in "$HOME"/.claude/skills/*; do
-  [ -L "$link" ] && [ ! -e "$link" ] || continue
-  [ "$(readlink "$link")" = "../../.agents/skills/$(basename "$link")" ] || continue
-  rm -f "$link"
-  echo "Pruned $link — no longer in the repo"
-done
-
-# `skills add` writes the new entry into the lock, which is a symlink into this
-# repo, while the skill's files land in ~/.agents/skills outside it. Flag the
-# drift so the skill gets committed rather than lost on the next machine.
-if [ -f "$REPO/skill-lock.json" ] && command -v jq >/dev/null; then
-  while IFS= read -r name; do
-    [ -n "$name" ] || continue
-    [ -d "$REPO/skills/$name" ] && continue
-    echo "WARNING: skill-lock.json lists '$name' but $REPO/skills/$name does not exist." >&2
-    echo "  Copy $HOME/.agents/skills/$name into the repo and commit it, or drop the lock entry." >&2
-  done < <(jq -r '.skills // {} | keys[]' "$REPO/skill-lock.json" 2>/dev/null || true)
+# Migration: skills used to be linked into ~/.agents/skills (the skills CLI's
+# canonical directory) with the lock file symlinked alongside. Remove the links
+# this script made there; real directories the CLI installed are left alone.
+if [ -d "$HOME/.agents/skills" ]; then
+  for link in "$HOME"/.agents/skills/*; do
+    [ -L "$link" ] || continue
+    name="${link##*/}"
+    if [ "$(readlink "$link")" = "$REPO/skills/$name" ]; then
+      rm -f "$link"
+      echo "Removed $link — skills no longer route through ~/.agents"
+    elif [ ! -e "$link" ]; then
+      case "$(readlink "$link")" in
+        */skills/"$name")
+          rm -f "$link"
+          echo "Removed $link — skills no longer route through ~/.agents"
+          ;;
+      esac
+    fi
+  done
+fi
+lock="$HOME/.agents/.skill-lock.json"
+if [ -L "$lock" ]; then
+  case "$(readlink "$lock")" in
+    */skill-lock.json)
+      if [ "$(readlink "$lock")" = "$REPO/skill-lock.json" ] || [ ! -e "$lock" ]; then
+        rm -f "$lock"
+        echo "Removed $lock — the repo no longer carries a skill lock"
+      fi
+      ;;
+  esac
 fi
 
 # Package manager detection: brew, then the common Linux families.
