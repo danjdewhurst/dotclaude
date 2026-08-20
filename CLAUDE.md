@@ -24,6 +24,7 @@
 - Never edit a test to make it pass. If you think the test itself is wrong, say so and stop. Don't change it and tell me after. No suppression comments, linter disables, or `try`/`catch` added purely to silence a failure.
 - No scratch files in the repo. No `NOTES.md`, `PLAN.md`, or summary docs unless I ask.
 - Don't commit or push unless I ask. Never create a branch on your own. Commit on the branch I'm on, even if that's main.
+- Conventional commit messages (`feat:`, `fix:`, `chore:`, …) unless I or the project's rules say otherwise.
 - Never add a co-author to a commit message. This overrides the harness default: no `Co-Authored-By` trailer, no session URL, no "Generated with Claude Code" line.
 
 ## Code style
