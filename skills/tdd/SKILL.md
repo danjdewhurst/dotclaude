@@ -4,7 +4,7 @@ description: "Fix a bug test-first: a focused regression test that fails before 
 disable-model-invocation: true
 ---
 
-# TDD Bug Fix
+# TDD bug fix
 
 When fixing a bug with a clear, cheap test path, make the broken behavior executable before changing production code. The goal is a focused regression test that fails before the fix and passes after it.
 
@@ -18,7 +18,7 @@ When fixing a bug with a clear, cheap test path, make the broken behavior execut
 6. **Rerun the regression test.** Confirm the test now passes.
 7. **Run nearby validation.** Run relevant adjacent tests, type checks, lint, or scenario checks when the change has broader risk.
 
-## If a Failing Test Is Impractical
+## If a failing test is impractical
 
 A test is impractical when it would require broad harness setup, brittle mocks, slow end-to-end infrastructure, production-only state, vague reproduction steps, or large unrelated fixture churn. Do not force one, and do not silently skip the regression step either. Before fixing, explain why a failing test is impossible or not worth the cost, then choose the closest executable regression check available: a targeted script, manual reproduction command, browser automation, snapshot comparison, log assertion, or focused integration check. Say which one you used.
 
@@ -32,7 +32,7 @@ Prefer no new test over a bad test. A bad test is one that mostly tests mocks, e
 - If the bug is flaky, make the test deterministic where possible and document the signal being locked down.
 - If the bug exposes a broader class of failures, first land the focused regression path, then consider additional sibling coverage.
 
-## Final Response
+## Final response
 
 Report the evidence, not just the outcome:
 

@@ -39,7 +39,7 @@ My global [Claude Code](https://claude.com/claude-code) config, kept in one plac
 
 ## Setup on a new machine
 
-Two things have to be there first: git, and a package manager for the rest — [Homebrew](https://brew.sh) on macOS, apt, dnf or pacman on Linux. Without one the script still links everything, but it installs no tools, and on macOS it finds only the preinstalled bash 3.2, warns, and leaves the shell setting unwritten.
+Two things have to be there first: git, and a package manager for the rest. That means [Homebrew](https://brew.sh) on macOS, and apt, dnf or pacman on Linux. Without one the script still links everything, but it installs no tools, and on macOS it finds only the preinstalled bash 3.2, warns, and leaves the shell setting unwritten.
 
 ```bash
 git clone https://github.com/danjdewhurst/dotclaude.git ~/dotclaude
@@ -157,7 +157,7 @@ One caveat. `CLAUDE.md` is written for Claude Code and names its skills and tool
 
 ## Not synced
 
-`projects/`, `settings.json`, and anything else under `~/.claude` this repo doesn't link stay machine-local. So do `~/.zshrc`, `~/.bashrc.local` and `~/.dotclaude.local`.
+`projects/`, `settings.json`, and anything else under `~/.claude` this repo doesn't link stay machine-local. So do `~/.zshrc`, `~/.bashrc.local` and `~/.dotclaude.local`. That includes any skill sitting in an agent's `skills/` directory without being in `skills/` here. The work-specific ones stay off this public repo on purpose.
 
 ## Known rough edges
 
