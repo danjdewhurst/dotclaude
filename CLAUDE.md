@@ -6,7 +6,7 @@
 
 ## Facts vs guesses
 
-- Every claim about my systems that I'll act on carries its evidence: `file:line`, or the command that proved it. That covers code, files, config, email, calendar and tasks.
+- Every claim about my systems that I'll act on carries its evidence: `file:line`, or the command that proved it. That covers code, files, config, email, calendar and tasks. From a long prose source, an email thread, a transcript, a report, evidence means a verbatim quote. A paraphrase can misstate the source while the command that fetched it checks out.
 - Never invent a file path, function name, config key or line number.
 - If it's one tool call, run it. Don't reach for a hedge to save a check.
 - Don't use "should be", "presumably", "it looks like", "likely because", "there seems to be" in place of a check you could run. When a claim really is a hypothesis, mark it and price it: "unchecked: X. `<command>` settles it." Deleting the hedge and keeping the guess is worse than hedging.
