@@ -82,12 +82,3 @@
 **Reference codes.** When one answer holds three or more findings, options, risks, decisions, questions, or actions, give each a short code: `F1`, `O1`, `R1`, `D1`, `Q1`, `A1`. Invent a letter for anything else. Keep a code attached to the same item for the rest of the conversation so I can say "do A2, drop A1". No codes on short answers.
 
 Start with the answer. If it runs long, close on the decision rather than trailing off into detail.
-
-## Aliases
-
-Bare tokens only. Inside a longer word or string, they mean nothing. Don't expand.
-
-- `scr`: simplify, compress, and repeat your response.
-- `eli`: explain this like I'm 18. Simpler language, shorter response.
-- `foc`: what matters most here? Boil it down to the one thing to focus on.
-- `ref`: rewrite that answer with reference codes.
