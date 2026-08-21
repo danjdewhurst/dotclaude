@@ -513,6 +513,62 @@ write_shell_setting() {
   echo "Set CLAUDE_CODE_SHELL=$BASH_PATH in $settings"
 }
 
+# The unslop writing rules ride into every session as a SessionStart hook that
+# reads the linked skill, so they sit in context from the first turn with no
+# invocation. settings.json is per-machine, so like CLAUDE_CODE_SHELL the hook
+# is merged here rather than synced.
+write_unslop_hook() {
+  settings="$HOME/.claude/settings.json"
+  skill="$HOME/.claude/skills/unslop/SKILL.md"
+
+  # No linked skill means the agents config dropped the claude entry, or the
+  # skill is gone from the repo. Either way a hook would inject nothing.
+  [ -e "$skill" ] || return 0
+
+  if ! command -v jq >/dev/null; then
+    echo "WARNING: jq is unavailable, so the unslop hook was not written." >&2
+    return
+  fi
+
+  hook_cmd="jq -n --rawfile s $skill '{hookSpecificOutput:{hookEventName:\"SessionStart\",additionalContext:(\"The following writing rules apply to every response in this session:\\n\\n\" + \$s)}}'"
+  hook_entry='{hooks: [{type: "command", command: $cmd, timeout: 10, statusMessage: "Loading unslop writing rules"}]}'
+
+  if [ ! -e "$settings" ]; then
+    mkdir -p "$HOME/.claude"
+    jq -n --arg cmd "$hook_cmd" "{hooks: {SessionStart: [$hook_entry]}}" > "$settings"
+    echo "Created $settings with the unslop SessionStart hook"
+    return
+  fi
+
+  if ! jq -e . "$settings" >/dev/null 2>&1; then
+    echo "WARNING: $settings is not valid JSON, so the unslop hook was not written." >&2
+    return
+  fi
+
+  # Any SessionStart command reading the skill counts, whatever path shape an
+  # older setup wrote, so re-running never stacks a second copy.
+  if jq -e '[.hooks.SessionStart? // [] | .[]? | .hooks? // [] | .[]? | .command? // "" | tostring] | any(contains("unslop/SKILL.md"))' "$settings" >/dev/null 2>&1; then
+    echo "Already current: unslop hook in $settings"
+    return
+  fi
+
+  tmp="$settings.dotclaude.tmp"
+  if ! jq --arg cmd "$hook_cmd" ".hooks.SessionStart = ((.hooks.SessionStart? // []) + [$hook_entry])" "$settings" > "$tmp"; then
+    rm -f "$tmp"
+    echo "WARNING: could not merge the unslop hook into $settings. Left untouched." >&2
+    return
+  fi
+
+  [ -e "$settings.dotclaude.bak" ] || cp "$settings" "$settings.dotclaude.bak"
+
+  # Through the file, not over it, same as the shell setting above.
+  cat "$tmp" > "$settings"
+  rm -f "$tmp"
+  echo "Added the unslop SessionStart hook to $settings"
+}
+
+write_unslop_hook
+
 if [ -z "${BASH_PATH:-}" ]; then
   echo "WARNING: no bash 4+ found. Claude Code will keep using your login shell."
 else

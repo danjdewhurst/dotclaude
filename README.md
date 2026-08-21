@@ -82,7 +82,7 @@ The last line sources `~/.bashrc.local` if it exists. That is where anything mac
 
 `~/.claude/settings.json` is a real file on each machine, not a symlink out of this repo. What goes in it is machine-specific: MCP servers denied by UUID, notification channel, effort level. Syncing one copy across machines hands every machine another machine's answers.
 
-`install.sh` writes exactly one key into it, `env.CLAUDE_CODE_SHELL`, for the reason in the next section. The merge goes through `jq`, so every other key survives, and the first write leaves a `settings.json.dotclaude.bak` alongside. If there is no file yet it writes a minimal one holding just that key. If the file is there but the JSON is broken it says so and changes nothing.
+`install.sh` writes two things into it: `env.CLAUDE_CODE_SHELL`, for the reason in the next section, and a `SessionStart` hook that loads the `unslop` skill's rules into every session, so the writing rules reach each machine even though the file stays local. The merges go through `jq`, so every other key survives, and the first write leaves a `settings.json.dotclaude.bak` alongside. If there is no file yet it writes a minimal one holding just what it owns. If the file is there but the JSON is broken it says so and changes nothing.
 
 It also repairs one legacy case. A machine set up before this split still has `~/.claude/settings.json` symlinked into the repo, pointing at a file git has since deleted. The installer converts that link back into a real file. It takes the repo copy if that is still on disk, and the last commit that carried it if it is not. That machine keeps the settings it was already running instead of a dangling link and Claude Code's defaults.
 
@@ -132,6 +132,8 @@ On the other machine, `git -C ~/dotclaude pull`. Claude reads `CLAUDE.md` at ses
 ## Skills
 
 `skills/` holds the agent skills verbatim, and `install.sh` links each one straight into the `skills/` directory of every agent in `agents.conf`: `~/.claude/skills`, where Claude reads them, plus `~/.agents/skills` and `~/.codex/skills` by default. Committing the content means the same bytes on every machine and nothing to install first. This repo used to route the `~/.claude` links *through* `~/.agents/skills` and keep a lock file so the skills CLI could update them, but every skill here has since been modified locally, so a CLI update would stomp those edits. That plumbing stays gone. Every link points straight into the repo, there is no lock file, and updates are manual: diff a skill against its upstream and merge by hand.
+
+`unslop` fires differently from the rest. Rather than waiting to be invoked, a `SessionStart` hook in `settings.json` reads the linked skill and puts its rules in context from the first turn, replies included. `install.sh` writes that hook, since `settings.json` never syncs.
 
 Dropping a skill from `skills/` here removes all of its links on the next `install.sh`. Nothing else in those directories is touched, so skills Codex installed for itself sit untouched next to the linked ones.
 
