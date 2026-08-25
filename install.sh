@@ -533,6 +533,15 @@ remove_unslop_hook() {
     return
   fi
 
+  # Any SessionStart command reading the rules counts, whatever path shape the
+  # setup that wrote it used. Asking first, rather than diffing jq's output
+  # against the file, keeps a settings.json that never had the hook byte for
+  # byte as it is instead of rewriting it in jq's formatting.
+  if ! jq -e '[.hooks.SessionStart? // [] | .[]? | .hooks? // [] | .[]? | .command? // "" | tostring] | any(test("unslop(\\.md|/SKILL\\.md)"))' "$settings" >/dev/null 2>&1; then
+    echo "Already current: no unslop hook in $settings"
+    return
+  fi
+
   tmp="$settings.dotclaude.tmp"
   if ! jq '
     .hooks.SessionStart = [(.hooks.SessionStart? // [])[] | .hooks |= map(select((.command? // "" | tostring | test("unslop(\\.md|/SKILL\\.md)")) | not)) | select(.hooks | length > 0)]
@@ -541,12 +550,6 @@ remove_unslop_hook() {
   ' "$settings" > "$tmp"; then
     rm -f "$tmp"
     echo "WARNING: could not remove the unslop hook from $settings. Left untouched." >&2
-    return
-  fi
-
-  if cmp -s "$tmp" "$settings"; then
-    rm -f "$tmp"
-    echo "Already current: no unslop hook in $settings"
     return
   fi
 
