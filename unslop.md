@@ -1,9 +1,3 @@
----
-name: unslop
-description: "Cut AI tells from writing. A SessionStart hook loads these rules into every Claude Code session; invoke by hand for a de-slop pass over existing text."
-disable-model-invocation: true
----
-
 # Unslop
 
 Edit text to remove AI patterns and add human voice.

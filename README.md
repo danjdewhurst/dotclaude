@@ -20,6 +20,7 @@ My global [Claude Code](https://claude.com/claude-code) config, kept in one plac
 ```text
 ~/dotclaude/                            ~/
 ├── CLAUDE.md ─────────────────────────▶ .claude/CLAUDE.md, {.agents,.codex}/AGENTS.md
+├── unslop.md ─────────────────────────▶ {.claude,.agents,.codex}/unslop.md
 ├── bashrc ────────────────────────────▶ .bashrc
 ├── skills/
 │   ├── <skill>/ ──────────────────────▶ {.claude,.agents,.codex}/skills/<skill>
@@ -33,6 +34,7 @@ My global [Claude Code](https://claude.com/claude-code) config, kept in one plac
 | Repo file | What it is |
 |---|---|
 | `CLAUDE.md` | How I want Claude to work: scope, code style, how to communicate |
+| `unslop.md` | Writing rules for every reply. Linked beside `CLAUDE.md` |
 | `bashrc` | The shell Claude runs commands in |
 | `skills/` | The agent skills, vendored. See [Skills](#skills) |
 | `agents.conf` | Which agents the links go to. See [Other agents](#other-agents) |
@@ -82,7 +84,7 @@ The last line sources `~/.bashrc.local` if it exists. That is where anything mac
 
 `~/.claude/settings.json` is a real file on each machine, not a symlink out of this repo. What goes in it is machine-specific: MCP servers denied by UUID, notification channel, effort level. Syncing one copy across machines hands every machine another machine's answers.
 
-`install.sh` writes two things into it: `env.CLAUDE_CODE_SHELL`, for the reason in the next section, and a `SessionStart` hook that loads the `unslop` skill's rules into every session, so the writing rules reach each machine even though the file stays local. The merges go through `jq`, so every other key survives, and the first write leaves a `settings.json.dotclaude.bak` alongside. If there is no file yet it writes a minimal one holding just what it owns. If the file is there but the JSON is broken it says so and changes nothing.
+`install.sh` writes `env.CLAUDE_CODE_SHELL` into it, for the reason in the next section. The merge goes through `jq`, so every other key survives, and the first write leaves a `settings.json.dotclaude.bak` alongside. If there is no file yet it writes a minimal one holding just what it owns. If the file is there but the JSON is broken it says so and changes nothing. It also strips a leftover `SessionStart` hook that used to inject `unslop.md`, now that `CLAUDE.md` tells the agent to read that file.
 
 It also repairs one legacy case. A machine set up before this split still has `~/.claude/settings.json` symlinked into the repo, pointing at a file git has since deleted. The installer converts that link back into a real file. It takes the repo copy if that is still on disk, and the last commit that carried it if it is not. That machine keeps the settings it was already running instead of a dangling link and Claude Code's defaults.
 
@@ -133,15 +135,15 @@ On the other machine, `git -C ~/dotclaude pull`. Claude reads `CLAUDE.md` at ses
 
 `skills/` holds the agent skills verbatim, and `install.sh` links each one straight into the `skills/` directory of every agent in `agents.conf`: `~/.claude/skills`, where Claude reads them, plus `~/.agents/skills` and `~/.codex/skills` by default. Committing the content means the same bytes on every machine and nothing to install first. This repo used to route the `~/.claude` links *through* `~/.agents/skills` and keep a lock file so the skills CLI could update them, but every skill here has since been modified locally, so a CLI update would stomp those edits. That plumbing stays gone. Every link points straight into the repo, there is no lock file, and updates are manual: diff a skill against its upstream and merge by hand.
 
-`unslop` fires differently from the rest. Rather than waiting to be invoked, a `SessionStart` hook in `settings.json` reads the linked skill and puts its rules in context from the first turn, replies included. `install.sh` writes that hook, since `settings.json` never syncs.
+`unslop.md` is not a skill. `install.sh` links it beside `CLAUDE.md` in each agent directory. `CLAUDE.md` tells the agent to read it before writing.
 
 Dropping a skill from `skills/` here removes all of its links on the next `install.sh`. Nothing else in those directories is touched, so skills Codex installed for itself sit untouched next to the linked ones.
 
-Four are in here: `grilling`, `tdd`, `unslop` and `writing-for-agents`. All of them started as other people's work, vendored and then locally modified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
+Three skills are in here: `grilling`, `tdd` and `writing-for-agents`. All of them, and `unslop.md`, started as other people's work, vendored and then locally modified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
 
 ## Other agents
 
-The same config goes where other agents read it, and which agents that is lives in `agents.conf` rather than the script. Each entry is `<dir>:<filename>`: the directory is created, `CLAUDE.md` is linked into it under that filename, and the skills land in its `skills/` subdirectory. The shipped list is Claude Code, the shared `~/.agents` directory, and [Codex](https://developers.openai.com/codex/cli/):
+The same config goes where other agents read it, and which agents that is lives in `agents.conf` rather than the script. Each entry is `<dir>:<filename>`: the directory is created, `CLAUDE.md` is linked into it under that filename, `unslop.md` is linked beside it, and the skills land in its `skills/` subdirectory. The shipped list is Claude Code, the shared `~/.agents` directory, and [Codex](https://developers.openai.com/codex/cli/):
 
 ```bash
 AGENT_DIRS=(
@@ -173,4 +175,4 @@ On a machine without Homebrew the script installs mise with `curl https://mise.r
 
 It's my config, not a template. `CLAUDE.md` is written in first person about how I want to be worked with, and `bashrc` assumes my toolchain. Fork it and rewrite both rather than copying them and wondering why Claude keeps mentioning mise.
 
-MIT licensed, except the vendored skills. Those belong to their authors under their own MIT terms, listed in [`skills/NOTICE.md`](skills/NOTICE.md). Take whatever's useful.
+MIT licensed, except the vendored skills and `unslop.md`. Those belong to their authors under their own MIT terms, listed in [`skills/NOTICE.md`](skills/NOTICE.md). Take whatever's useful.
