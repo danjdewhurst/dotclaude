@@ -569,6 +569,49 @@ write_unslop_hook() {
 
 write_unslop_hook
 
+# Auto memory stays off everywhere. settings.json is per-machine, so like the
+# keys above this one is merged rather than synced.
+write_memory_setting() {
+  settings="$HOME/.claude/settings.json"
+  mkdir -p "$HOME/.claude"
+
+  if ! command -v jq >/dev/null; then
+    echo "WARNING: jq is unavailable, so $settings was left alone." >&2
+    echo "  Add by hand: \"autoMemoryEnabled\": false" >&2
+    return
+  fi
+
+  if [ ! -e "$settings" ]; then
+    jq -n '{autoMemoryEnabled: false}' > "$settings"
+    echo "Created $settings with autoMemoryEnabled=false"
+    return
+  fi
+
+  if ! jq -e . "$settings" >/dev/null 2>&1; then
+    echo "WARNING: $settings is not valid JSON. Left untouched." >&2
+    echo "  Fix it and re-run, or add: \"autoMemoryEnabled\": false" >&2
+    return
+  fi
+
+  # Not `// empty` — jq's // treats false itself as absent.
+  if jq -e '.autoMemoryEnabled == false' "$settings" >/dev/null; then
+    echo "Already current: autoMemoryEnabled in $settings"
+    return
+  fi
+
+  tmp="$settings.dotclaude.tmp"
+  jq '.autoMemoryEnabled = false' "$settings" > "$tmp"
+
+  [ -e "$settings.dotclaude.bak" ] || cp "$settings" "$settings.dotclaude.bak"
+
+  # Through the file, not over it, same as the shell setting.
+  cat "$tmp" > "$settings"
+  rm -f "$tmp"
+  echo "Set autoMemoryEnabled=false in $settings"
+}
+
+write_memory_setting
+
 if [ -z "${BASH_PATH:-}" ]; then
   echo "WARNING: no bash 4+ found. Claude Code will keep using your login shell."
 else
