@@ -26,18 +26,17 @@ My global [Claude Code](https://claude.com/claude-code) config, kept in one plac
 │   ├── <skill>/ ──────────────────────▶ {.claude,.agents,.codex}/skills/<skill>
 │   └── NOTICE.md
 ├── agents.conf
-├── install.sh
-├── README.md
-└── LICENSE
+└── install.sh
 ```
 
 | Repo file | What it is |
 |---|---|
-| `CLAUDE.md` | How I want Claude to work: scope, code style, how to communicate |
-| `unslop.md` | Writing rules for every reply. Linked beside `CLAUDE.md` |
-| `bashrc` | The shell Claude runs commands in |
-| `skills/` | The agent skills, vendored. See [Skills](#skills) |
+| `CLAUDE.md` | How I want Claude to work: what counts as evidence, how to change code, how to talk to me |
+| `unslop.md` | Writing rules for every reply. Linked beside `CLAUDE.md`, which tells the agent to read it |
+| `bashrc` | The shell Claude runs commands in. See [Why there's a bashrc in here](#why-theres-a-bashrc-in-here) |
+| `skills/` | The agent skills, vendored and locally modified. See [Skills](#skills) |
 | `agents.conf` | Which agents the links go to. See [Other agents](#other-agents) |
+| `install.sh` | Links, installs, and writes the per-machine settings. Safe to re-run |
 
 ## Setup on a new machine
 
@@ -48,23 +47,41 @@ git clone https://github.com/danjdewhurst/dotclaude.git ~/dotclaude
 ~/dotclaude/install.sh
 ```
 
-That creates the agent directories `agents.conf` lists if they're missing, moves anything already at those paths to `<name>.bak` (timestamped if a `.bak` is already there), and links everything into place. Then it installs the tools Claude leans on from Bash:
+In order, the script:
+
+1. Creates the agent directories `agents.conf` lists, moves anything already at a target path to `<name>.bak` (timestamped if a `.bak` is already there), and links everything into place.
+2. Installs the tools Claude leans on from Bash, in the table below.
+3. Finds the newest bash 4+ on the machine and writes its path into `~/.claude/settings.json`, with an alias in your login shell as the fallback. See [Why the bash path is written per machine](#why-the-bash-path-is-written-per-machine).
+4. Merges `autoMemoryEnabled: false` into the same file and strips a hook older setups left behind. See [Why `settings.json` isn't in here](#why-settingsjson-isnt-in-here).
 
 | Tool | What Claude uses it for | macOS | Linux |
 |---|---|---|---|
 | `git` | Everything. Already there, since you cloned this | Homebrew | apt / dnf / pacman |
 | `rg` | Searching code without drowning in dependencies | Homebrew | apt / dnf / pacman |
 | `fd` | Finding files | Homebrew | apt / dnf / pacman |
-| `jq` | Reading JSON | Homebrew | apt / dnf / pacman |
+| `jq` | Reading JSON, and the settings merge above | Homebrew | apt / dnf / pacman |
 | `mise` | Language runtimes, and a fallback installer | Homebrew | mise.run |
 | `ast-grep` | Structural search by syntax rather than regex | Homebrew | mise |
 | `yq` | Reading YAML | Homebrew | mise |
 
-Linux support covers apt, dnf and pacman. On anything else the script says what it couldn't install and carries on.
+On a distro with none of those package managers the script says what it couldn't install and carries on.
 
 Run it as many times as you like. A second run installs nothing and rewrites nothing.
 
 > Tested on macOS 26 (Apple Silicon), Ubuntu 24.04 and Fedora 41, including the no-root, no-sudo and no-package-manager paths.
+
+## Day to day
+
+Edit `~/.claude/CLAUDE.md` as normal, then:
+
+```bash
+git -C ~/dotclaude commit -am "tweak the debug-spiral rule"
+git -C ~/dotclaude push
+```
+
+On the other machine, `git -C ~/dotclaude pull`. Claude reads `CLAUDE.md` at session start, so the next session picks it up with no restart dance.
+
+Adding a skill is a directory under `skills/` and a re-run of `install.sh`. Dropping one is the reverse: delete the directory, re-run, and the links go with it.
 
 ## Why there's a bashrc in here
 
@@ -79,14 +96,6 @@ Hence a real `bashrc` here rather than a redirect to the zsh one.
 The last line sources `~/.bashrc.local` if it exists. That is where anything machine-specific goes: a tmux auto-attach, a PATH entry for a tool only one box has, an override of something set above it. It runs last, so it wins. Nothing breaks if the file is absent, and I never commit it here.
 
 > **It is not optional.** Homebrew on Apple Silicon lives at `/opt/homebrew/bin`, which is not on the default PATH. Without `brew shellenv` a fresh machine hands Claude a shell with no `node`, no `php`, no `rg`, and no clue why.
-
-## Why `settings.json` isn't in here
-
-`~/.claude/settings.json` is a real file on each machine, not a symlink out of this repo. What goes in it is machine-specific: MCP servers denied by UUID, notification channel, effort level. Syncing one copy across machines hands every machine another machine's answers.
-
-`install.sh` merges two keys into it: `env.CLAUDE_CODE_SHELL`, for the reason in the next section, and `autoMemoryEnabled: false`, because I want Claude reading `CLAUDE.md` rather than notes it wrote to itself. The merge goes through `jq`, so every other key survives, and the first change to a file that was already there leaves a `settings.json.dotclaude.bak` alongside. If there is no file yet it writes a minimal one holding just what it owns, with no backup, since there was nothing to back up. If the file is there but the JSON is broken it says so and changes nothing. The same pass strips a leftover `SessionStart` hook that used to inject `unslop.md`, now that `CLAUDE.md` tells the agent to read that file.
-
-It also repairs one legacy case. A machine set up before this split still has `~/.claude/settings.json` symlinked into the repo, pointing at a file git has since deleted. The installer converts that link back into a real file. It takes the repo copy if that is still on disk, and the last commit that carried it if it is not. That machine keeps the settings it was already running instead of a dangling link and Claude Code's defaults.
 
 ## Why the bash path is written per machine
 
@@ -120,26 +129,23 @@ alias claude="SHELL='/opt/homebrew/bin/bash' claude"
 
 Those are the shells you launch `claude` from, never the synced `~/.bashrc`. Re-running rewrites the block where it already sits rather than stacking a second copy or moving it to the end of the file. If the block is already correct it does nothing at all. It writes *through* a symlinked rc file instead of replacing the symlink, which matters if your `~/.zshrc` points into prezto or another dotfiles checkout. If the markers are damaged, the script leaves the file alone and warns.
 
-## Day to day
+## Why `settings.json` isn't in here
 
-Edit `~/.claude/CLAUDE.md` as normal, then:
+`~/.claude/settings.json` is a real file on each machine, not a symlink out of this repo. What goes in it is machine-specific: MCP servers denied by UUID, notification channel, effort level. Syncing one copy across machines hands every machine another machine's answers.
 
-```bash
-git -C ~/dotclaude commit -am "tweak the debug-spiral rule"
-git -C ~/dotclaude push
-```
+`install.sh` merges two keys into it: `env.CLAUDE_CODE_SHELL`, for the reason in the previous section, and `autoMemoryEnabled: false`, because I want Claude reading `CLAUDE.md` rather than notes it wrote to itself. The merge goes through `jq`, so every other key survives, and the first change to a file that was already there leaves a `settings.json.dotclaude.bak` alongside. If there is no file yet it writes a minimal one holding just what it owns, with no backup, since there was nothing to back up. If the file is there but the JSON is broken it says so and changes nothing. The same pass strips a leftover `SessionStart` hook that used to inject `unslop.md`, now that `CLAUDE.md` tells the agent to read that file.
 
-On the other machine, `git -C ~/dotclaude pull`. Claude reads `CLAUDE.md` at session start, so the next session picks it up with no restart dance.
+It also repairs one legacy case. A machine set up before this split still has `~/.claude/settings.json` symlinked into the repo, pointing at a file git has since deleted. The installer converts that link back into a real file. It takes the repo copy if that is still on disk, and the last commit that carried it if it is not. That machine keeps the settings it was already running instead of a dangling link and Claude Code's defaults.
 
 ## Skills
 
-`skills/` holds the agent skills verbatim, and `install.sh` links each one straight into the `skills/` directory of every agent in `agents.conf`: `~/.claude/skills`, where Claude reads them, plus `~/.agents/skills` and `~/.codex/skills` by default. Committing the content means the same bytes on every machine and nothing to install first. This repo used to route the `~/.claude` links *through* `~/.agents/skills` and keep a lock file so the skills CLI could update them, but every skill here has since been modified locally, so a CLI update would stomp those edits. That plumbing stays gone. Every link points straight into the repo, there is no lock file, and updates are manual: diff a skill against its upstream and merge by hand.
+Three skills are in here: `grilling`, `tdd` and `writing-for-agents`. All of them, and `unslop.md`, started as other people's work, vendored and then locally modified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
 
-`unslop.md` is not a skill. `install.sh` links it beside `CLAUDE.md` in each agent directory. `CLAUDE.md` tells the agent to read it before writing.
+`install.sh` links each skill straight into the `skills/` directory of every agent in `agents.conf`: `~/.claude/skills`, where Claude reads them, plus `~/.agents/skills` and `~/.codex/skills` by default. Committing the content means the same bytes on every machine and nothing to install first. There is no lock file and no skills CLI in the loop, because every skill here carries local edits a CLI update would stomp. Updates are manual: diff a skill against its upstream and merge by hand.
 
 Dropping a skill from `skills/` here removes all of its links on the next `install.sh`. Nothing else in those directories is touched, so skills Codex installed for itself sit untouched next to the linked ones.
 
-Three skills are in here: `grilling`, `tdd` and `writing-for-agents`. All of them, and `unslop.md`, started as other people's work, vendored and then locally modified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
+`unslop.md` is not a skill. `install.sh` links it beside `CLAUDE.md` in each agent directory, and `CLAUDE.md` tells the agent to read it before writing anything I'll see.
 
 ## Other agents
 
@@ -155,7 +161,7 @@ AGENT_DIRS=(
 
 To change the list on one machine, put the same syntax in `~/.dotclaude.local`. The script sources it after `agents.conf`, so it wins, and like `~/.bashrc.local` it never gets committed here. `AGENT_DIRS+=("$HOME/.gemini:GEMINI.md")` adds an agent, redefining the array replaces the list. Removing an entry stops the linking but leaves the links already on disk. Delete those by hand.
 
-One caveat. `CLAUDE.md` is written for Claude Code and names its skills and tools directly, so an agent reading it through `AGENTS.md` will hit instructions it can't act on. That's the trade for one file instead of one per agent, made knowingly.
+One caveat. `CLAUDE.md` is written for Claude Code, so a few lines override that harness's defaults, the commit trailer for one, and mean nothing to an agent reading it as `AGENTS.md`. That's the trade for one file instead of one per agent, made knowingly.
 
 ## Not synced
 
