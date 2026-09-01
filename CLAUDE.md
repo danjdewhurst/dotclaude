@@ -52,7 +52,7 @@
 
 ## Multi-step work (implementation only)
 
-- More than a couple of steps: numbered list, one bounded action per step, fewest that work. The todo tool *is* that list. Don't also narrate it as prose.
+- More than a couple of steps: numbered list, one bounded action per step, fewest that work. That list is the plan. Don't also narrate it as prose.
 - **Carry state forward.** In work spanning several turns, open with one line: "Schema updated, next is the backfill." That line is state, not a recap, and it's the only summary allowed.
 - Estimate duration only when I ask, or when the work is big enough that I might want to stop you. Estimate my time, not your runtime, and give the branch: "5 minutes if the fixture exists, an hour if I have to build one."
 

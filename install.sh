@@ -471,147 +471,92 @@ write_block() {
 }
 
 # Claude Code reads the Bash tool's shell from env.CLAUDE_CODE_SHELL in
-# settings.json. That file is per-machine, so the installer merges the one key
-# it owns and leaves everything else in there alone.
-write_shell_setting() {
+# settings.json, and auto memory is switched off by autoMemoryEnabled. That
+# file is per-machine, so each key the installer owns is merged into it and
+# everything else in there is left alone. The same merge strips the
+# SessionStart hook that used to inject unslop.md, now that CLAUDE.md tells the
+# agent to read the file.
+#
+# merge_setting <label> <current> <filter> [jq args...]: <current> is a jq test
+# that is true when the file already has what <filter> would write. Asking
+# first, rather than diffing jq's output against the file, keeps a settings.json
+# that is already current byte for byte instead of rewriting it in jq's
+# formatting.
+SETTINGS_CREATED=""
+merge_setting() {
+  label="$1"
+  current="$2"
+  filter="$3"
+  shift 3
   settings="$HOME/.claude/settings.json"
   # ~/.claude usually exists from the linking above, but the agents config can
   # drop the claude entry and this write must still land.
   mkdir -p "$HOME/.claude"
 
   if ! command -v jq >/dev/null; then
-    echo "WARNING: jq is unavailable, so $settings was left alone." >&2
-    echo "  Add by hand: \"env\": { \"CLAUDE_CODE_SHELL\": \"$BASH_PATH\" }" >&2
+    echo "WARNING: jq is unavailable, so $label was not written to $settings." >&2
+    echo "  Install jq and re-run, or edit the file by hand." >&2
     return
   fi
 
   if [ ! -e "$settings" ]; then
-    jq -n --arg shell "$BASH_PATH" '{env: {CLAUDE_CODE_SHELL: $shell}}' > "$settings"
-    echo "Created $settings with CLAUDE_CODE_SHELL=$BASH_PATH"
+    jq -n "$@" "$filter" > "$settings"
+    SETTINGS_CREATED=1
+    echo "Created $settings with $label"
     return
   fi
 
   if ! jq -e . "$settings" >/dev/null 2>&1; then
-    echo "WARNING: $settings is not valid JSON. Left untouched." >&2
-    echo "  Fix it and re-run, or add: \"env\": { \"CLAUDE_CODE_SHELL\": \"$BASH_PATH\" }" >&2
+    echo "WARNING: $settings is not valid JSON, so $label was not written. Fix it and re-run." >&2
     return
   fi
 
-  if [ "$(jq -r '.env.CLAUDE_CODE_SHELL // empty' "$settings")" = "$BASH_PATH" ]; then
-    echo "Already current: CLAUDE_CODE_SHELL in $settings"
+  if jq -e "$@" "$current" "$settings" >/dev/null 2>&1; then
+    echo "Already current: $label in $settings"
     return
   fi
 
   tmp="$settings.dotclaude.tmp"
-  jq --arg shell "$BASH_PATH" '.env.CLAUDE_CODE_SHELL = $shell' "$settings" > "$tmp"
+  if ! jq "$@" "$filter" "$settings" > "$tmp"; then
+    rm -f "$tmp"
+    echo "WARNING: could not write $label to $settings. Left untouched." >&2
+    return
+  fi
 
-  [ -e "$settings.dotclaude.bak" ] || cp "$settings" "$settings.dotclaude.bak"
+  # Before the first modification, so the backup is of the file as it was. A
+  # file this run created has no earlier state worth keeping.
+  [ -n "$SETTINGS_CREATED" ] || [ -e "$settings.dotclaude.bak" ] || cp "$settings" "$settings.dotclaude.bak"
 
   # Write through the file rather than replacing it, so a settings.json someone
   # has symlinked out of their own dotfiles keeps its link.
   cat "$tmp" > "$settings"
   rm -f "$tmp"
-  echo "Set CLAUDE_CODE_SHELL=$BASH_PATH in $settings"
+  echo "Set $label in $settings"
 }
 
-# The unslop SessionStart hook is gone. CLAUDE.md points at unslop.md, so the
-# agent reads the file. A machine set up before that still has the hook in
-# settings.json. Strip it so it does not keep injecting a second copy.
-remove_unslop_hook() {
-  settings="$HOME/.claude/settings.json"
+if [ -n "${BASH_PATH:-}" ]; then
+  echo "Claude shell: $BASH_PATH ($("$BASH_PATH" --version | sed -n 1p))"
+  merge_setting "CLAUDE_CODE_SHELL=$BASH_PATH" \
+    '.env.CLAUDE_CODE_SHELL == $shell' \
+    '.env.CLAUDE_CODE_SHELL = $shell' \
+    --arg shell "$BASH_PATH"
+fi
 
-  [ -e "$settings" ] || return 0
+merge_setting "autoMemoryEnabled=false" \
+  '.autoMemoryEnabled == false' \
+  '.autoMemoryEnabled = false'
 
-  if ! command -v jq >/dev/null; then
-    echo "WARNING: jq is unavailable, so the unslop hook was left in $settings." >&2
-    echo "  Delete the SessionStart command that reads unslop.md or unslop/SKILL.md." >&2
-    return
-  fi
-
-  if ! jq -e . "$settings" >/dev/null 2>&1; then
-    echo "WARNING: $settings is not valid JSON, so the unslop hook was left in place." >&2
-    return
-  fi
-
-  # Any SessionStart command reading the rules counts, whatever path shape the
-  # setup that wrote it used. Asking first, rather than diffing jq's output
-  # against the file, keeps a settings.json that never had the hook byte for
-  # byte as it is instead of rewriting it in jq's formatting.
-  if ! jq -e '[.hooks.SessionStart? // [] | .[]? | .hooks? // [] | .[]? | .command? // "" | tostring] | any(test("unslop(\\.md|/SKILL\\.md)"))' "$settings" >/dev/null 2>&1; then
-    echo "Already current: no unslop hook in $settings"
-    return
-  fi
-
-  tmp="$settings.dotclaude.tmp"
-  if ! jq '
-    .hooks.SessionStart = [(.hooks.SessionStart? // [])[] | .hooks |= map(select((.command? // "" | tostring | test("unslop(\\.md|/SKILL\\.md)")) | not)) | select(.hooks | length > 0)]
-    | if (.hooks.SessionStart? // []) == [] then del(.hooks.SessionStart) else . end
-    | if .hooks == {} then del(.hooks) else . end
-  ' "$settings" > "$tmp"; then
-    rm -f "$tmp"
-    echo "WARNING: could not remove the unslop hook from $settings. Left untouched." >&2
-    return
-  fi
-
-  [ -e "$settings.dotclaude.bak" ] || cp "$settings" "$settings.dotclaude.bak"
-
-  cat "$tmp" > "$settings"
-  rm -f "$tmp"
-  echo "Removed the unslop SessionStart hook from $settings"
-}
-
-remove_unslop_hook
-
-# Auto memory stays off everywhere. settings.json is per-machine, so like the
-# keys above this one is merged rather than synced.
-write_memory_setting() {
-  settings="$HOME/.claude/settings.json"
-  mkdir -p "$HOME/.claude"
-
-  if ! command -v jq >/dev/null; then
-    echo "WARNING: jq is unavailable, so $settings was left alone." >&2
-    echo "  Add by hand: \"autoMemoryEnabled\": false" >&2
-    return
-  fi
-
-  if [ ! -e "$settings" ]; then
-    jq -n '{autoMemoryEnabled: false}' > "$settings"
-    echo "Created $settings with autoMemoryEnabled=false"
-    return
-  fi
-
-  if ! jq -e . "$settings" >/dev/null 2>&1; then
-    echo "WARNING: $settings is not valid JSON. Left untouched." >&2
-    echo "  Fix it and re-run, or add: \"autoMemoryEnabled\": false" >&2
-    return
-  fi
-
-  # Not `// empty` — jq's // treats false itself as absent.
-  if jq -e '.autoMemoryEnabled == false' "$settings" >/dev/null; then
-    echo "Already current: autoMemoryEnabled in $settings"
-    return
-  fi
-
-  tmp="$settings.dotclaude.tmp"
-  jq '.autoMemoryEnabled = false' "$settings" > "$tmp"
-
-  [ -e "$settings.dotclaude.bak" ] || cp "$settings" "$settings.dotclaude.bak"
-
-  # Through the file, not over it, same as the shell setting.
-  cat "$tmp" > "$settings"
-  rm -f "$tmp"
-  echo "Set autoMemoryEnabled=false in $settings"
-}
-
-write_memory_setting
+# Any SessionStart command reading the rules counts, whatever path shape the
+# setup that wrote it used.
+merge_setting "SessionStart without the unslop hook" \
+  '[.hooks.SessionStart? // [] | .[]? | .hooks? // [] | .[]? | .command? // "" | tostring] | any(test("unslop(\\.md|/SKILL\\.md)")) | not' \
+  '.hooks.SessionStart = [(.hooks.SessionStart? // [])[] | .hooks |= map(select((.command? // "" | tostring | test("unslop(\\.md|/SKILL\\.md)")) | not)) | select(.hooks | length > 0)]
+   | if (.hooks.SessionStart? // []) == [] then del(.hooks.SessionStart) else . end
+   | if .hooks == {} then del(.hooks) else . end'
 
 if [ -z "${BASH_PATH:-}" ]; then
   echo "WARNING: no bash 4+ found. Claude Code will keep using your login shell."
 else
-  echo "Claude shell: $BASH_PATH ($("$BASH_PATH" --version | sed -n 1p))"
-
-  write_shell_setting
-
   login_shell="$(basename "${SHELL:-}")"
 
   if [ "$login_shell" = "fish" ]; then

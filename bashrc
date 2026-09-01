@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Minimal bash setup for Claude Code's shell.
 # Interactive conveniences live in ~/.zshrc and deliberately aren't here.
 
