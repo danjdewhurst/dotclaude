@@ -27,6 +27,8 @@ for entry in ${AGENT_DIRS[@]+"${AGENT_DIRS[@]}"}; do
   esac
   dir="${entry%:*}"
   name="${entry##*:}"
+  agent="${dir##*/}"
+  agent="${agent#.}"
 
   if [ -e "$dir" ] && [ ! -d "$dir" ]; then
     echo "ERROR: $dir exists but is not a directory. Move it aside and re-run." >&2
@@ -34,10 +36,15 @@ for entry in ${AGENT_DIRS[@]+"${AGENT_DIRS[@]}"}; do
   fi
   mkdir -p "$dir"
 
-  LINKS+=("CLAUDE.md:$dir/$name")
+  LINKS+=("build/$agent/$name:$dir/$name")
   LINKS+=("unslop.md:$dir/unslop.md")
   AGENT_SKILL_DIRS+=("$dir/skills")
 done
+
+# The instruction files are rendered per agent from AGENTS.src.md, so the links
+# below point into build/. Rendering runs before linking so a tag error stops
+# the script before it has touched anything in $HOME.
+"$REPO/build.sh"
 
 # Migration: settings.json used to be symlinked out of this repo. It is now a
 # real per-machine file, so a machine set up before that change is left with a
@@ -101,7 +108,11 @@ for entry in "${LINKS[@]}"; do
     continue
   fi
 
-  if [ -e "$target" ] || [ -L "$target" ]; then
+  # The instruction file used to be linked straight at the repo's CLAUDE.md,
+  # since renamed to AGENTS.src.md. A link of that shape is ours to replace.
+  if [ -L "$target" ] && [ "$(readlink "$target")" = "$REPO/CLAUDE.md" ]; then
+    rm -f "$target"
+  elif [ -e "$target" ] || [ -L "$target" ]; then
     preserve "$target"
   fi
 

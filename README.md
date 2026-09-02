@@ -15,24 +15,28 @@
 
 My global [Claude Code](https://claude.com/claude-code) config, kept in one place so a new machine takes a clone and a script instead of an afternoon of remembering. The same files are linked where Codex and other agents look, so one repo configures all of them. See [Other agents](#other-agents).
 
-`install.sh` symlinks everything here into `$HOME`. Editing a file in place edits the repo, so there is no copy step and nothing to forget to commit.
+`install.sh` symlinks everything here into `$HOME`. Editing a file in place edits the repo, so there is no copy step and nothing to forget to commit. The one exception is the instruction file, which is rendered per agent from `AGENTS.src.md` so a paragraph can be marked as Claude-only. See [One source, one file per agent](#one-source-one-file-per-agent).
 
 ```text
 ~/dotclaude/                            ~/
-├── CLAUDE.md ─────────────────────────▶ .claude/CLAUDE.md, {.agents,.codex}/AGENTS.md
+├── AGENTS.src.md ──▶ build/claude/CLAUDE.md ──▶ .claude/CLAUDE.md
+│                     build/agents/AGENTS.md ──▶ .agents/AGENTS.md
+│                     build/codex/AGENTS.md ───▶ .codex/AGENTS.md
 ├── unslop.md ─────────────────────────▶ {.claude,.agents,.codex}/unslop.md
 ├── bashrc ────────────────────────────▶ .bashrc
 ├── skills/
 │   ├── <skill>/ ──────────────────────▶ {.claude,.agents,.codex}/skills/<skill>
 │   └── NOTICE.md
 ├── agents.conf
+├── build.sh
 └── install.sh
 ```
 
 | Repo file | What it is |
 |---|---|
-| `CLAUDE.md` | How I want Claude to work: what counts as evidence, how to change code, how to talk to me |
-| `unslop.md` | Writing rules for every reply. Linked beside `CLAUDE.md`, which tells the agent to read it |
+| `AGENTS.src.md` | How I want an agent to work: what counts as evidence, how to change code, how to talk to me. Tagged blocks go to one agent only |
+| `build.sh` | Renders `AGENTS.src.md` into `build/<agent>/<filename>`, which is what gets linked. Gitignored output |
+| `unslop.md` | Writing rules for every reply. Linked beside the instruction file, which tells the agent to read it |
 | `bashrc` | The shell Claude runs commands in. See [Why there's a bashrc in here](#why-theres-a-bashrc-in-here) |
 | `skills/` | The agent skills, vendored and locally modified. See [Skills](#skills) |
 | `agents.conf` | Which agents the links go to. See [Other agents](#other-agents) |
@@ -49,10 +53,11 @@ git clone https://github.com/danjdewhurst/dotclaude.git ~/dotclaude
 
 In order, the script:
 
-1. Creates the agent directories `agents.conf` lists, moves anything already at a target path to `<name>.bak` (timestamped if a `.bak` is already there), and links everything into place.
-2. Installs the tools Claude leans on from Bash, in the table below.
-3. Finds the newest bash 4+ on the machine and writes its path into `~/.claude/settings.json`, with an alias in your login shell as the fallback. See [Why the bash path is written per machine](#why-the-bash-path-is-written-per-machine).
-4. Merges `autoMemoryEnabled: false` into the same file and strips a hook older setups left behind. See [Why `settings.json` isn't in here](#why-settingsjson-isnt-in-here).
+1. Renders `AGENTS.src.md` once per agent into `build/`, stopping before it touches `$HOME` if a tag is wrong.
+2. Creates the agent directories `agents.conf` lists, moves anything already at a target path to `<name>.bak` (timestamped if a `.bak` is already there), and links everything into place.
+3. Installs the tools Claude leans on from Bash, in the table below.
+4. Finds the newest bash 4+ on the machine and writes its path into `~/.claude/settings.json`, with an alias in your login shell as the fallback. See [Why the bash path is written per machine](#why-the-bash-path-is-written-per-machine).
+5. Merges `autoMemoryEnabled: false` into the same file and strips a hook older setups left behind. See [Why `settings.json` isn't in here](#why-settingsjson-isnt-in-here).
 
 | Tool | What Claude uses it for | macOS | Linux |
 |---|---|---|---|
@@ -72,14 +77,15 @@ Run it as many times as you like. A second run installs nothing and rewrites not
 
 ## Day to day
 
-Edit `~/.claude/CLAUDE.md` as normal, then:
+Edit `~/dotclaude/AGENTS.src.md`, not `~/.claude/CLAUDE.md`, which is a link to the rendered copy. Then:
 
 ```bash
+~/dotclaude/build.sh
 git -C ~/dotclaude commit -am "tweak the debug-spiral rule"
 git -C ~/dotclaude push
 ```
 
-On the other machine, `git -C ~/dotclaude pull`. Claude reads `CLAUDE.md` at session start, so the next session picks it up with no restart dance.
+On the other machine, `git -C ~/dotclaude pull && ~/dotclaude/build.sh`. Claude reads `CLAUDE.md` at session start, so the next session picks it up with no restart dance. Forgetting `build.sh` on either side means the agent keeps reading the previous render, with no warning.
 
 Adding a skill is a directory under `skills/` and a re-run of `install.sh`. Dropping one is the reverse: delete the directory, re-run, and the links go with it.
 
@@ -147,9 +153,28 @@ Dropping a skill from `skills/` here removes all of its links on the next `insta
 
 `unslop.md` is not a skill. `install.sh` links it beside `CLAUDE.md` in each agent directory, and `CLAUDE.md` tells the agent to read it before writing anything I'll see.
 
+## One source, one file per agent
+
+`AGENTS.src.md` is one file for every agent, but a couple of lines in it only make sense to Claude Code. The commit rules, for one, override that harness's defaults and read as noise to Codex. So a block between a tag and its closing tag, each on its own line, goes only to the agents the tag names:
+
+```markdown
+<claude>
+- Never add a co-author to a commit message. This overrides the harness default: no `Co-Authored-By` trailer.
+</claude>
+<codex agents>
+- Never add a co-author, session link or "Generated with" line to a commit message.
+</codex agents>
+```
+
+A tag name is the agent's directory without the dot, so `~/.claude` is `claude`, `~/.codex` is `codex`, and an agent added through `~/.dotclaude.local` gets a tag with no other setup. Several names in one tag keep the block for each of them, which is how "everyone but Claude" is written. The closing tag repeats the names exactly. Tags mid-sentence are not a thing: the filter is line by line, and that keeps `build.sh` a short bash and awk script with nothing to install.
+
+A name that isn't in `agents.conf`, a tag inside another tag, or a tag never closed fails the build with the file and line. That is deliberate: a typo like `<cluade>` would otherwise drop a block from every agent and nobody would notice. On GitHub the tags disappear and the text stays, so the source page reads as the union.
+
+`build/` is gitignored. Every machine renders its own copy, so there is no stale output to commit by mistake, at the cost of running `build.sh` after a pull.
+
 ## Other agents
 
-The same config goes where other agents read it, and which agents that is lives in `agents.conf` rather than the script. Each entry is `<dir>:<filename>`: the directory is created, `CLAUDE.md` is linked into it under that filename, `unslop.md` is linked beside it, and the skills land in its `skills/` subdirectory. The shipped list is Claude Code, the shared `~/.agents` directory, and [Codex](https://developers.openai.com/codex/cli/):
+The same config goes where other agents read it, and which agents that is lives in `agents.conf` rather than the script. Each entry is `<dir>:<filename>`: the directory is created, the render for that agent is linked into it under that filename, `unslop.md` is linked beside it, and the skills land in its `skills/` subdirectory. The shipped list is Claude Code, the shared `~/.agents` directory, and [Codex](https://developers.openai.com/codex/cli/):
 
 ```bash
 AGENT_DIRS=(
@@ -161,11 +186,11 @@ AGENT_DIRS=(
 
 To change the list on one machine, put the same syntax in `~/.dotclaude.local`. The script sources it after `agents.conf`, so it wins, and like `~/.bashrc.local` it never gets committed here. `AGENT_DIRS+=("$HOME/.gemini:GEMINI.md")` adds an agent, redefining the array replaces the list. Removing an entry stops the linking but leaves the links already on disk. Delete those by hand.
 
-One caveat. `CLAUDE.md` is written for Claude Code, so a few lines override that harness's defaults, the commit trailer for one, and mean nothing to an agent reading it as `AGENTS.md`. That's the trade for one file instead of one per agent, made knowingly.
+`AGENTS.src.md` is written with Claude Code in mind, and the lines that only make sense there are tagged `<claude>` so the other agents get a plain version instead. See [One source, one file per agent](#one-source-one-file-per-agent).
 
 ## Not synced
 
-`projects/`, `settings.json`, and anything else under `~/.claude` this repo doesn't link stay machine-local. So do `~/.zshrc`, `~/.bashrc.local` and `~/.dotclaude.local`. That includes any skill sitting in an agent's `skills/` directory without being in `skills/` here. The work-specific ones stay off this public repo on purpose.
+`build/` is rendered on each machine and never committed. `projects/`, `settings.json`, and anything else under `~/.claude` this repo doesn't link stay machine-local. So do `~/.zshrc`, `~/.bashrc.local` and `~/.dotclaude.local`. That includes any skill sitting in an agent's `skills/` directory without being in `skills/` here. The work-specific ones stay off this public repo on purpose.
 
 ## Known rough edges
 
@@ -179,6 +204,6 @@ On a machine without Homebrew the script installs mise with `curl https://mise.r
 
 ## If you found this
 
-It's my config, not a template. `CLAUDE.md` is written in first person about how I want to be worked with, and `bashrc` assumes my toolchain. Fork it and rewrite both rather than copying them and wondering why Claude keeps mentioning mise.
+It's my config, not a template. `AGENTS.src.md` is written in first person about how I want to be worked with, and `bashrc` assumes my toolchain. Fork it and rewrite both rather than copying them and wondering why Claude keeps mentioning mise.
 
 MIT licensed, except the vendored skills and `unslop.md`. Those belong to their authors under their own MIT terms, listed in [`skills/NOTICE.md`](skills/NOTICE.md). Take whatever's useful.

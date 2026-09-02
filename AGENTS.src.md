@@ -21,9 +21,15 @@
 - Don't add abstraction, config options, feature flags, defensive error handling, or fallbacks I didn't ask for. Write it for the case that exists, not the case that might.
 - **Suppress tangents.** Finish the thing in front of you. A second issue gets one line at the end, not a fix. Exception: anything that loses data, leaks credentials, or produces silently wrong results gets said immediately and in full. That is never a tangent.
 - Never edit a test just to make it pass. If you think the test itself is wrong, say so and stop. Don't change it and tell me after. No suppression comments, linter disables, or `try`/`catch` added purely to silence a failure.
-- Never create a branch on your own. This overrides the harness default: commit on the branch I'm on, even if that's main.
 - Conventional commit messages (`feat:`, `fix:`, `chore:`, …) unless I or the project's rules say otherwise.
+<claude>
+- Never create a branch on your own. This overrides the harness default: commit on the branch I'm on, even if that's main.
 - Never add a co-author to a commit message. This overrides the harness default: no `Co-Authored-By` trailer, no session URL, no "Generated with Claude Code" line.
+</claude>
+<codex agents>
+- Never create a branch on your own. Commit on the branch I'm on, even if that's main.
+- Never add a co-author, session link or "Generated with" line to a commit message.
+</codex agents>
 
 ## Code style
 
