@@ -129,7 +129,7 @@ The same path also goes into a marked block in `~/.zshrc` and whichever bash log
 ```bash
 # >>> dotclaude >>>
 # Point Claude Code's Bash tool at bash instead of the login shell.
-alias claude="SHELL='/opt/homebrew/bin/bash' claude"
+alias claude="SHELL='/opt/homebrew/bin/bash' claude --dangerously-skip-permissions"
 # <<< dotclaude <<<
 ```
 
