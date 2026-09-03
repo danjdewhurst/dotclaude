@@ -153,6 +153,14 @@ Dropping a skill from `skills/` here removes all of its links on the next `insta
 
 `unslop.md` is not a skill. `install.sh` links it beside `CLAUDE.md` in each agent directory, and `CLAUDE.md` tells the agent to read it before writing anything I'll see.
 
+## Tuned for Fable 5.1
+
+The rules in `AGENTS.src.md` were written against chattier models and then reviewed against Anthropic's [guide to prompting Claude Fable 5.1](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1). That model is quieter by default: fewer updates during long tool runs, a last message that can cover only the last step, and a habit of ending a turn on "next I'll..." instead of doing it. Rules that suppressed recaps, right for the older models, pushed 5.1 into silence.
+
+So the file now asks for a closing message on any turn with more than a handful of tool calls, and no recap on shorter ones. A plan and its work share a turn. Tests go in only where asked or where the repo already tests that kind of change. Files are edited in place rather than rewritten. Verbatim quotes are marked as quotes, and a half-recognised product or model name gets looked up before it's answered. Each of those maps to a section of the guide, and the file should still read fine on other models.
+
+The effort level is the one thing the guide covers that lives outside this repo. It sits in `~/.claude/settings.json`, and effort names don't mean the same amount of thinking across models, so re-check it after a model change.
+
 ## One source, one file per agent
 
 `AGENTS.src.md` is one file for every agent, but a couple of lines in it only make sense to Claude Code. The commit rules, for one, override that harness's defaults and read as noise to Codex. So a block between a tag and its closing tag, each on its own line, goes only to the agents the tag names:
