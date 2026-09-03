@@ -1,0 +1,3 @@
+interface:
+  display_name: "Show me"
+  short_description: "Explain the current topic with a diagram or code sketch"
