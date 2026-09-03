@@ -8,6 +8,7 @@ place to file issues or send fixes. This file is my own.
 | File | Upstream | Copyright |
 | --- | --- | --- |
 | `grilling` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/productivity/grilling) | 2026 Matt Pocock |
+| `show-me` | [humanlayer/skills](https://github.com/humanlayer/skills/tree/main/plugins/show-me/skills/show-me) | 2026 HumanLayer |
 | `tdd` | [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack/skills/tdd) | 2026 Lauren Tan |
 | `unslop.md` | [cursor/plugins](https://github.com/cursor/plugins/tree/main/pstack/skills/unslop) | 2026 Lauren Tan |
 | `writing-for-agents` | [mattpocock/skills](https://github.com/mattpocock/skills/tree/main/skills/productivity/writing-for-agents) | 2026 Matt Pocock |
@@ -15,10 +16,11 @@ place to file issues or send fixes. This file is my own.
 `cursor/plugins` has no repository-level licence. The subtree these skills come from
 carries its own, `pstack/LICENSE`, which is MIT.
 
-Both upstreams are MIT, so their terms are reproduced once below.
+All three upstreams are MIT, so their terms are reproduced once below.
 
 ## MIT License
 
+Copyright (c) 2026 HumanLayer
 Copyright (c) 2026 Lauren Tan
 Copyright (c) 2026 Matt Pocock
 

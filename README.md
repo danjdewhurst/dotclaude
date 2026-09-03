@@ -145,7 +145,7 @@ It also repairs one legacy case. A machine set up before this split still has `~
 
 ## Skills
 
-Three skills are in here: `grilling`, `tdd` and `writing-for-agents`. All of them, and `unslop.md`, started as other people's work, vendored and then locally modified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
+Four skills are in here: `grilling`, `show-me`, `tdd` and `writing-for-agents`. All of them, and `unslop.md`, started as other people's work, vendored and in most cases locally modified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
 
 `install.sh` links each skill straight into the `skills/` directory of every agent in `agents.conf`: `~/.claude/skills`, where Claude reads them, plus `~/.agents/skills` and `~/.codex/skills` by default. Committing the content means the same bytes on every machine and nothing to install first. There is no lock file and no skills CLI in the loop, because every skill here carries local edits a CLI update would stomp. Updates are manual: diff a skill against its upstream and merge by hand.
 
