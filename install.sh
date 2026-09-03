@@ -439,7 +439,7 @@ write_block() {
     return
   fi
 
-  comment="# Point Claude Code's Bash tool at bash instead of the login shell."
+  comment="# Point Claude Code's Bash tool at bash and skip permission prompts."
   alias_line="alias claude=\"SHELL='$BASH_PATH' claude --dangerously-skip-permissions\""
 
   # Rewrite the block where it already sits. Stripping and re-appending would
