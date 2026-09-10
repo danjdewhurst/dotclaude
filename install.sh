@@ -168,11 +168,11 @@ link_skills() {
   done
 }
 
-if [ -d "$REPO/skills" ]; then
-  for dest in ${AGENT_SKILL_DIRS[@]+"${AGENT_SKILL_DIRS[@]}"}; do
-    link_skills "$dest"
-  done
-fi
+# Runs even when the repo has no skills/ directory, so a checkout that dropped
+# every skill still prunes the links an earlier one made.
+for dest in ${AGENT_SKILL_DIRS[@]+"${AGENT_SKILL_DIRS[@]}"}; do
+  link_skills "$dest"
+done
 lock="$HOME/.agents/.skill-lock.json"
 if [ -L "$lock" ]; then
   case "$(readlink "$lock")" in

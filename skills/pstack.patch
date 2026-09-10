@@ -1,0 +1,73 @@
+--- upstream/how/SKILL.md
++++ local/how/SKILL.md
+@@ -21,9 +21,8 @@
+ 
+ Decompose the question into 2 to 4 exploration angles, each a distinct slice of the subsystem. Spawn all explorers in a single message:
+ 
+-- `subagent_type`: `generalPurpose`
+-- `model`: your configured how-explorer model (default `grok-4.6-fast-xhigh`)
+-- `readonly`: `true`
++- `subagent_type`: `Explore` (read-only)
++- `model`: `sonnet`
+ 
+ Each explorer gets the prompt in `references/explorer-prompt.md` with its angle filled in. Then go to Step 3.
+ 
+@@ -31,9 +30,8 @@
+ 
+ Spawn one Task subagent that explores and explains in one pass:
+ 
+-- `subagent_type`: `generalPurpose`
+-- `model`: your configured how-explainer model (default `claude-fable-5-1-thinking-max`)
+-- `readonly`: `true`
++- `subagent_type`: `general-purpose` (the prompt keeps it read-only; `Explore` reads excerpts and is the wrong fit for a full explanation)
++- `model`: omit, so it inherits the session's model
+ 
+ Build its prompt from `references/explainer-prompt.md` without the explorer-findings section. Go to Step 4.
+ 
+@@ -41,9 +39,8 @@
+ 
+ Once all explorers have returned, spawn one Task subagent to synthesize their findings into one explanation:
+ 
+-- `subagent_type`: `generalPurpose`
+-- `model`: your configured how-explainer model (default `claude-fable-5-1-thinking-max`)
+-- `readonly`: `true`
++- `subagent_type`: `general-purpose` (the prompt keeps it read-only; `Explore` reads excerpts and is the wrong fit for a full explanation)
++- `model`: omit, so it inherits the session's model
+ 
+ Build its prompt from `references/explainer-prompt.md` with every explorer's findings filled in.
+ 
+--- upstream/why/SKILL.md
++++ local/why/SKILL.md
+@@ -59,7 +59,7 @@
+ 
+ ### Discovery
+ 
+-Before spawning investigators, list the available MCPs from the Cursor environment. Use the available-tools map when present. Otherwise inspect the `mcps/` directory Cursor exposes for enabled MCP servers.
++Before spawning investigators, list the MCP servers available in this session: the tools named `mcp__<server>__<tool>`, plus any server instructions the session carries.
+ 
+ Map each available MCP to one evidence category:
+ 
+@@ -78,9 +78,8 @@
+ Launch all matching investigators in a single message so they run concurrently. Don't ask one agent to cover multiple MCPs.
+ 
+ Subagent config (each):
+-- `subagent_type`: `generalPurpose`
+-- `model`: your configured why-investigators model (default `grok-4.6-fast-xhigh`)
+-- `readonly`: `false` (agent mode). **Do not use readonly/Ask mode.** It strips MCP access, which disables MCP-backed investigators entirely. Investigators still shouldn't write anything.
++- `subagent_type`: `general-purpose` (not `Explore`, which has no MCP access and would disable MCP-backed investigators entirely). Investigators still shouldn't write anything.
++- `model`: `sonnet`
+ 
+ Each investigator gets:
+ 1. The base prompt from `references/investigator-prompt.md`
+@@ -122,9 +121,8 @@
+ 
+ Spawn one synthesizer subagent:
+ 
+-- `subagent_type`: `generalPurpose`
+-- `model`: your configured why-synthesizer model (default `claude-fable-5-1-thinking-max`)
+-- `readonly`: `false` (agent mode). The synthesizer's quality check spot-verifies citations, which can require MCP access. Readonly/Ask mode strips MCPs and defeats that.
++- `subagent_type`: `general-purpose` (the quality check spot-verifies citations, which can need MCP access; `Explore` has none)
++- `model`: omit, so it inherits the session's model
+ 
+ The synthesizer gets:
+ 1. The investigator findings, including any null results and any categories skipped with justification

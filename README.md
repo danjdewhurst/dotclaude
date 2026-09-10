@@ -25,7 +25,8 @@ My global [Claude Code](https://claude.com/claude-code) config, kept in one plac
 ├── bashrc ────────────────────────────▶ .bashrc
 ├── skills/
 │   ├── <skill>/ ──────────────────────▶ {.claude,.agents,.codex}/skills/<skill>
-│   └── NOTICE.md
+│   ├── NOTICE.md
+│   └── pstack.patch
 ├── agents.conf
 ├── build.sh
 └── install.sh
@@ -36,7 +37,7 @@ My global [Claude Code](https://claude.com/claude-code) config, kept in one plac
 | `AGENTS.src.md` | The instruction file, one source for every agent. Empty at the moment. Tagged blocks go to one agent only |
 | `build.sh` | Renders `AGENTS.src.md` into `build/<agent>/<filename>`, which is what gets linked. Gitignored output |
 | `bashrc` | The shell Claude runs commands in. See [Why there's a bashrc in here](#why-theres-a-bashrc-in-here) |
-| `skills/` | The agent skills, vendored and locally modified. See [Skills](#skills) |
+| `skills/` | The agent skills, copied from upstream. See [Skills](#skills) |
 | `agents.conf` | Which agents the links go to. See [Other agents](#other-agents) |
 | `install.sh` | Links, installs, and writes the per-machine settings. Safe to re-run |
 
@@ -143,11 +144,11 @@ It also repairs one legacy case. A machine set up before this split still has `~
 
 ## Skills
 
-Four skills are in here: `grilling`, `show-me`, `tdd` and `writing-for-agents`. All of them started as other people's work, vendored and in most cases locally modified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
+Six skills are in here, all from Lauren Tan's [pstack](https://github.com/cursor/plugins/tree/main/pstack/skills): `how`, `why` and `teach` for understanding code, `tdd`, `technical-writing` and `unslop` for writing it up. pstack targets Cursor, so `how` and `why` carry local edits that swap Cursor's subagent parameters for Claude Code's Agent tool. The other four are byte for byte upstream. [`skills/NOTICE.md`](skills/NOTICE.md) records the upstream commit, a tree hash per skill, the licence and the update procedure, and [`skills/pstack.patch`](skills/pstack.patch) is the exact local diff. MIT.
 
-`install.sh` links each skill straight into the `skills/` directory of every agent in `agents.conf`: `~/.claude/skills`, where Claude reads them, plus `~/.agents/skills` and `~/.codex/skills` by default. Committing the content means the same bytes on every machine and nothing to install first. There is no lock file and no skills CLI in the loop, because every skill here carries local edits a CLI update would stomp. Updates are manual: diff a skill against its upstream and merge by hand.
+`install.sh` links each skill straight into the `skills/` directory of every agent in `agents.conf`: `~/.claude/skills`, where Claude reads them, plus `~/.agents/skills` and `~/.codex/skills` by default. Committing the content means the same bytes on every machine and nothing to install first. There is no lock file and no skills CLI in the loop. Updates are manual: compare tree hashes against upstream, copy over what moved, reapply the patch, and note the new hashes. `NOTICE.md` has the commands.
 
-Dropping a skill from `skills/` here removes all of its links on the next `install.sh`. Nothing else in those directories is touched, so skills Codex installed for itself sit untouched next to the linked ones.
+Dropping a skill from `skills/` here removes all of its links on the next `install.sh`, and so does dropping the whole directory. Nothing else in those directories is touched, so skills Codex installed for itself sit untouched next to the linked ones.
 
 ## Why the instruction file is empty
 
@@ -212,4 +213,4 @@ On a machine without Homebrew the script installs mise with `curl https://mise.r
 
 It's my config, not a template. `AGENTS.src.md` is mine to fill in first person about how I want to be worked with, and `bashrc` assumes my toolchain. Fork it and rewrite both rather than copying them and wondering why Claude keeps mentioning mise.
 
-MIT licensed, except the vendored skills. Those belong to their authors under their own MIT terms, listed in [`skills/NOTICE.md`](skills/NOTICE.md). Take whatever's useful.
+MIT licensed, except the vendored skills. Those belong to their author under their own MIT terms, listed in [`skills/NOTICE.md`](skills/NOTICE.md). Take whatever's useful.
