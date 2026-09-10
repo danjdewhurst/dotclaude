@@ -22,7 +22,6 @@ My global [Claude Code](https://claude.com/claude-code) config, kept in one plac
 ├── AGENTS.src.md ──▶ build/claude/CLAUDE.md ──▶ .claude/CLAUDE.md
 │                     build/agents/AGENTS.md ──▶ .agents/AGENTS.md
 │                     build/codex/AGENTS.md ───▶ .codex/AGENTS.md
-├── unslop.md ─────────────────────────▶ {.claude,.agents,.codex}/unslop.md
 ├── bashrc ────────────────────────────▶ .bashrc
 ├── skills/
 │   ├── <skill>/ ──────────────────────▶ {.claude,.agents,.codex}/skills/<skill>
@@ -34,9 +33,8 @@ My global [Claude Code](https://claude.com/claude-code) config, kept in one plac
 
 | Repo file | What it is |
 |---|---|
-| `AGENTS.src.md` | How I want an agent to work: what counts as evidence, how to change code, how to talk to me. Tagged blocks go to one agent only |
+| `AGENTS.src.md` | The instruction file, one source for every agent. Empty at the moment. Tagged blocks go to one agent only |
 | `build.sh` | Renders `AGENTS.src.md` into `build/<agent>/<filename>`, which is what gets linked. Gitignored output |
-| `unslop.md` | Writing rules for every reply. Linked beside the instruction file, which tells the agent to read it |
 | `bashrc` | The shell Claude runs commands in. See [Why there's a bashrc in here](#why-theres-a-bashrc-in-here) |
 | `skills/` | The agent skills, vendored and locally modified. See [Skills](#skills) |
 | `agents.conf` | Which agents the links go to. See [Other agents](#other-agents) |
@@ -139,31 +137,31 @@ Those are the shells you launch `claude` from, never the synced `~/.bashrc`. Re-
 
 `~/.claude/settings.json` is a real file on each machine, not a symlink out of this repo. What goes in it is machine-specific: MCP servers denied by UUID, notification channel, effort level. Syncing one copy across machines hands every machine another machine's answers.
 
-`install.sh` merges two keys into it: `env.CLAUDE_CODE_SHELL`, for the reason in the previous section, and `autoMemoryEnabled: false`, because I want Claude reading `CLAUDE.md` rather than notes it wrote to itself. The merge goes through `jq`, so every other key survives, and the first change to a file that was already there leaves a `settings.json.dotclaude.bak` alongside. If there is no file yet it writes a minimal one holding just what it owns, with no backup, since there was nothing to back up. If the file is there but the JSON is broken it says so and changes nothing. The same pass strips a leftover `SessionStart` hook that used to inject `unslop.md`, now that `CLAUDE.md` tells the agent to read that file.
+`install.sh` merges two keys into it: `env.CLAUDE_CODE_SHELL`, for the reason in the previous section, and `autoMemoryEnabled: false`, because I want Claude reading `CLAUDE.md` rather than notes it wrote to itself. The merge goes through `jq`, so every other key survives, and the first change to a file that was already there leaves a `settings.json.dotclaude.bak` alongside. If there is no file yet it writes a minimal one holding just what it owns, with no backup, since there was nothing to back up. If the file is there but the JSON is broken it says so and changes nothing. The same pass strips a leftover `SessionStart` hook that used to inject `unslop.md`, a writing-rules file this repo no longer carries.
 
 It also repairs one legacy case. A machine set up before this split still has `~/.claude/settings.json` symlinked into the repo, pointing at a file git has since deleted. The installer converts that link back into a real file. It takes the repo copy if that is still on disk, and the last commit that carried it if it is not. That machine keeps the settings it was already running instead of a dangling link and Claude Code's defaults.
 
 ## Skills
 
-Four skills are in here: `grilling`, `show-me`, `tdd` and `writing-for-agents`. All of them, and `unslop.md`, started as other people's work, vendored and in most cases locally modified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
+Four skills are in here: `grilling`, `show-me`, `tdd` and `writing-for-agents`. All of them started as other people's work, vendored and in most cases locally modified. [`skills/NOTICE.md`](skills/NOTICE.md) lists each one's upstream and licence. All MIT.
 
 `install.sh` links each skill straight into the `skills/` directory of every agent in `agents.conf`: `~/.claude/skills`, where Claude reads them, plus `~/.agents/skills` and `~/.codex/skills` by default. Committing the content means the same bytes on every machine and nothing to install first. There is no lock file and no skills CLI in the loop, because every skill here carries local edits a CLI update would stomp. Updates are manual: diff a skill against its upstream and merge by hand.
 
 Dropping a skill from `skills/` here removes all of its links on the next `install.sh`. Nothing else in those directories is touched, so skills Codex installed for itself sit untouched next to the linked ones.
 
-`unslop.md` is not a skill. `install.sh` links it beside `CLAUDE.md` in each agent directory, and `CLAUDE.md` tells the agent to read it before writing anything I'll see.
+## Why the instruction file is empty
 
-## Tuned for Fable 5.1
+`AGENTS.src.md` is empty, and the writing-rules file that used to sit beside it is gone. Most of what they held was there to fix Opus 5: the hedging, the recaps, the puffery, the drift into prose when a command would do. Fable 5.1 is the only model in use now, and it doesn't need telling. Rules written against a model no longer in use are at best dead weight and at worst push the current one into the wrong habits, so they came out. What goes back in, if anything, gets written against 5.1 from the start.
 
-The rules in `AGENTS.src.md` were written against chattier models and then reviewed against Anthropic's [guide to prompting Claude Fable 5.1](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1). That model is quieter by default: fewer updates during long tool runs, a last message that can cover only the last step, and a habit of ending a turn on "next I'll..." instead of doing it. Rules that suppressed recaps, right for the older models, pushed 5.1 into silence.
+The rules it carried were written against chattier models and then reviewed against Anthropic's [guide to prompting Claude Fable 5.1](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1). That model is quieter by default: fewer updates during long tool runs, a last message that can cover only the last step, and a habit of ending a turn on "next I'll..." instead of doing it. Rules that suppressed recaps, right for the older models, pushed 5.1 into silence.
 
-So the file now asks for a closing message on any turn with more than a handful of tool calls, and no recap on shorter ones. A plan and its work share a turn. Tests go in only where asked or where the repo already tests that kind of change. Files are edited in place rather than rewritten. Verbatim quotes are marked as quotes, and a half-recognised product or model name gets looked up before it's answered. Each of those maps to a section of the guide, and the file should still read fine on other models.
+So the file asked for a closing message on any turn with more than a handful of tool calls, and no recap on shorter ones. A plan and its work share a turn. Tests go in only where asked or where the repo already tests that kind of change. Files are edited in place rather than rewritten. Verbatim quotes are marked as quotes, and a half-recognised product or model name gets looked up before it's answered. Each of those maps to a section of the guide. The rendered output is still linked into place, so whatever goes back into the file reaches every agent on the next `build.sh`.
 
 The effort level is the one thing the guide covers that lives outside this repo. It sits in `~/.claude/settings.json`, and effort names don't mean the same amount of thinking across models, so re-check it after a model change.
 
 ## One source, one file per agent
 
-`AGENTS.src.md` is one file for every agent, but a couple of lines in it only make sense to Claude Code. The commit rules, for one, override that harness's defaults and read as noise to Codex. So a block between a tag and its closing tag, each on its own line, goes only to the agents the tag names:
+`AGENTS.src.md` is one file for every agent, but some lines only make sense to one of them. Commit rules that override Claude Code's defaults, say, read as noise to Codex. So a block between a tag and its closing tag, each on its own line, goes only to the agents the tag names:
 
 ```markdown
 <claude>
@@ -182,7 +180,7 @@ A name that isn't in `agents.conf`, a tag inside another tag, or a tag never clo
 
 ## Other agents
 
-The same config goes where other agents read it, and which agents that is lives in `agents.conf` rather than the script. Each entry is `<dir>:<filename>`: the directory is created, the render for that agent is linked into it under that filename, `unslop.md` is linked beside it, and the skills land in its `skills/` subdirectory. The shipped list is Claude Code, the shared `~/.agents` directory, and [Codex](https://developers.openai.com/codex/cli/):
+The same config goes where other agents read it, and which agents that is lives in `agents.conf` rather than the script. Each entry is `<dir>:<filename>`: the directory is created, the render for that agent is linked into it under that filename, and the skills land in its `skills/` subdirectory. The shipped list is Claude Code, the shared `~/.agents` directory, and [Codex](https://developers.openai.com/codex/cli/):
 
 ```bash
 AGENT_DIRS=(
@@ -212,6 +210,6 @@ On a machine without Homebrew the script installs mise with `curl https://mise.r
 
 ## If you found this
 
-It's my config, not a template. `AGENTS.src.md` is written in first person about how I want to be worked with, and `bashrc` assumes my toolchain. Fork it and rewrite both rather than copying them and wondering why Claude keeps mentioning mise.
+It's my config, not a template. `AGENTS.src.md` is mine to fill in first person about how I want to be worked with, and `bashrc` assumes my toolchain. Fork it and rewrite both rather than copying them and wondering why Claude keeps mentioning mise.
 
-MIT licensed, except the vendored skills and `unslop.md`. Those belong to their authors under their own MIT terms, listed in [`skills/NOTICE.md`](skills/NOTICE.md). Take whatever's useful.
+MIT licensed, except the vendored skills. Those belong to their authors under their own MIT terms, listed in [`skills/NOTICE.md`](skills/NOTICE.md). Take whatever's useful.

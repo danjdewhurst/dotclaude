@@ -37,7 +37,6 @@ for entry in ${AGENT_DIRS[@]+"${AGENT_DIRS[@]}"}; do
   mkdir -p "$dir"
 
   LINKS+=("build/$agent/$name:$dir/$name")
-  LINKS+=("unslop.md:$dir/unslop.md")
   AGENT_SKILL_DIRS+=("$dir/skills")
 done
 
@@ -485,8 +484,8 @@ write_block() {
 # settings.json, and auto memory is switched off by autoMemoryEnabled. That
 # file is per-machine, so each key the installer owns is merged into it and
 # everything else in there is left alone. The same merge strips the
-# SessionStart hook that used to inject unslop.md, now that CLAUDE.md tells the
-# agent to read the file.
+# SessionStart hook that used to inject unslop.md, a writing-rules file this
+# repo no longer carries.
 #
 # merge_setting <label> <current> <filter> [jq args...]: <current> is a jq test
 # that is true when the file already has what <filter> would write. Asking
