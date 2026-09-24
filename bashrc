@@ -58,3 +58,32 @@ unset -f _dotclaude_prepend_path
 if [ -f "$HOME/.bashrc.local" ]; then
   . "$HOME/.bashrc.local"
 fi
+
+# opencode
+export PATH=/home/dan/.opencode/bin:$PATH
+
+# --- prompt ---------------------------------------------------------------
+__prompt() {
+  local status=$?
+  local reset='\[\e[0m\]' dim='\[\e[2m\]' blue='\[\e[34m\]' green='\[\e[32m\]'
+  local red='\[\e[31m\]' yellow='\[\e[33m\]' magenta='\[\e[35m\]'
+
+  local git="" branch
+  if branch=$(git symbolic-ref --short -q HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null); then
+    local flags=""
+    [[ -n $(git status --porcelain 2>/dev/null | head -n1) ]] && flags+="*"
+    local counts
+    if counts=$(git rev-list --left-right --count '@{u}...HEAD' 2>/dev/null); then
+      local behind=${counts%%[[:space:]]*} ahead=${counts##*[[:space:]]}
+      (( ahead ))  && flags+=" ↑$ahead"
+      (( behind )) && flags+=" ↓$behind"
+    fi
+    git=" ${magenta}${branch}${yellow}${flags}${reset}"
+  fi
+
+  local arrow="${green}❯${reset}"
+  (( status )) && arrow="${red}❯${reset}"
+
+  PS1="${dim}\u@\h${reset} ${blue}\w${reset}${git}\n${arrow} "
+}
+PROMPT_COMMAND=__prompt
